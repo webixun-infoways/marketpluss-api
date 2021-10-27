@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Sponsor_Position extends Model
+class Feed_Save extends Model
 {
     use HasFactory;
-    protected $table="sponsor_positions";
+    protected $table="feed_saves";
 }

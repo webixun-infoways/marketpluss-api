@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\Feed_like;
 use App\Models\Feed_Report;
+use App\Models\Feed_Save;
+use App\Models\Vendor;
 use App\Models\Vendors_Subsciber;
 use App\Models\Feed_Comment;
 use App\Models\Feed;
@@ -179,7 +181,7 @@ class UserController extends Controller
             $feed->user_id=Auth::user()->id;
             $feed->vendor_id=$request->vendor_id;
 
-            if($feed->save())
+        if($feed->save())
         {
             $response['status']=true;
             $response['msg']="Successful";
@@ -337,7 +339,7 @@ class UserController extends Controller
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
 
-        $feed=Feed_Comment::join('users','feed_comments.user_id','=','users.id')-> where('feed_id',$request->feed_id)->where('feed_comments.status','active')->select('feed_comments.comment','users.name','users.profile_pic','feed_comments.updated_at','feed_comments.user_id')->get() ;
+        $feed=Feed_Comment::join('users','feed_comments.user_id','=','users.id')-> where('feed_id',$request->feed_id)->where('feed_comments.status','active')->select('feed_comments.comment','users.name','users.profile_pic','feed_comments.updated_at','feed_comments.user_id','feed_comments.id')->get() ;
 
         if(count($feed)>0)
         {
@@ -350,5 +352,79 @@ class UserController extends Controller
         }
         return json_encode($response);
     }
+
+    //method for handling the feed save user 
+
+    //function for feed likes
+    public function feed_save(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'feed_id' => 'required', 
+            'type'=>'required'
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+        if($request->type=='save')
+        {
+            $feed=new Feed_Save;
+            $feed->user_id=Auth::user()->id;
+            $feed->feed_id=$request->feed_id;
+
+            if($feed->save())
+        {
+            $response['status']=true;
+            $response['msg']="Saved";
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Not Updated";
+        }
+        }
+        else if($request->type=='unsave'){
+
+            $res=Feed_Save::where('feed_id',$request->feed_id)->where('user_id',Auth::user()->id)->delete();
+
+            if($res)
+            {
+                $response['status']=true;
+                $response['msg']="UnSaved";
+            }
+            else{
+                $response['status']=false;
+                $response['msg']="Not Updated";
+            }
+        }
+        else{
+            $response['status']=false;
+                $response['msg']="Invalid type";
+        }
+        
+        echo json_encode($response); 
+    }
+
+
+    public function get_category_vendors(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'page_id' => 'required', 
+            'category_id'=>'required',
+            'latitude'=>'required',
+            'longitude'=>'required'
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+
+        $response=Vendor::select("id", "( 3959 * acos( cos( radians(".$request->latitude.") ) * cos ( radians( shop_latitude ) ) * cos ( radians( shop_longitude ) - radians (".$request->longitude.") ) + sin ( radians(".$request->latitude.") ) * sin ( radians( shop_latitude ) ) ) ) as distance")->where('category_id',$request->category_id)->having('distance', '<', 25)->orderBy('distance')->paginate($request->page_id);
+        echo json_encode($response,JSON_UNESCAPED_SLASHES); 
+    }
     
+
 }
