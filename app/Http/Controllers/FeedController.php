@@ -2,7 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use App\Models\User;
+use App\Models\Feed_like;
+use App\Models\Feed_Report;
+use App\Models\Feed_Save;
+use App\Models\Vendor;
+use App\Models\Vendor_Product;
+use App\Models\Vendors_Subsciber;
+use App\Models\Vendor_category;
+use App\Models\Feed_Comment;
+use App\Models\Feed;
+use App\Models\Slider;
+use App\Models\Vendor_cover;
+
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Crypt;
 
 class FeedController extends Controller
 {
