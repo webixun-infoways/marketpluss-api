@@ -9,4 +9,5 @@ class Vendors_Subsciber extends Model
 {
     use HasFactory;
     protected $table="vendors_subscibers";
+
 }
