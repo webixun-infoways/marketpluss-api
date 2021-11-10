@@ -78,8 +78,20 @@ class UserController extends Controller
             $name=time().'_'.$pic->getClientOriginalExtention();
             if($pic->move($path,$name))
             {
-                $response['status']=true;
-                $response['profile_pic']=$path."/".$name;
+                $user_id=Auth::user()->id;
+                $user=user::find($user_id);
+                $user->profile_pic=$path."/".$name;
+                
+                if($user->save())
+                {
+                    $response['status']=true;
+                    $response['profile_pic']=$path."/".$name;
+                }
+                else
+                {
+                    $response['status']=false;
+                    $response['msg']="Profile could not be updated!";
+                }
             }
             else{
                 $response['status']=false;

@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VendorController;
 use App\Http\Controllers\FeedController;
 /*
 |--------------------------------------------------------------------------
@@ -58,5 +59,6 @@ Route::get('get_feed_comment', [FeedController::class,'get_feed_comment']);
 //condition  for protect the vendor route
 Route::middleware('auth:vendor-api')->group(function () {
     // our routes to be protected will go in here
-    Route::post('update_profile_vendor', [AuthController::class,'update_profile_name']);
+    Route::post('update_profile_vendor', [VendorController::class,'update_profile_vendor']);
+    Route::post('update_profile_picture_vendor', [VendorController::class,'update_profile_picture_vendor']);
 });
