@@ -122,7 +122,10 @@ class UserController extends Controller
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
 
-        $data=Vendor::select("id", "( 3959 * acos( cos( radians(".$request->latitude.") ) * cos ( radians( shop_latitude ) ) * cos ( radians( shop_longitude ) - radians (".$request->longitude.") ) + sin ( radians(".$request->latitude.") ) * sin ( radians( shop_latitude ) ) ) ) as distance")->where('category_id',$request->category_id)->having('distance', '<', 25)->orderBy('distance')->paginate($request->page_id);
+        $cat= $request->category_id;
+        $data=DB::table('vendors')->select("id",'shop_name','profile_pic')->whereIn('id', function ($query) use ($cat){
+        $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
+        })->paginate($request->page_id);
         
         if(count($data)>0)
         {

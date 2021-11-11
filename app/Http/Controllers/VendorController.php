@@ -93,5 +93,21 @@ class VendorController extends Controller
  
          echo json_encode($response,JSON_UNESCAPED_SLASHES);
      }
- 
-}
+    
+     //function for update the vendor category
+
+     public function update_category_vendor(Request $request)
+     {
+        $validator = Validator::make($request->all(), [ 
+            'update_profile_picture'=> 'required|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048'
+        ]);
+
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+
+
+        
+     }
+    }

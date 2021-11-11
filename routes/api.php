@@ -61,4 +61,6 @@ Route::middleware('auth:vendor-api')->group(function () {
     // our routes to be protected will go in here
     Route::post('update_profile_vendor', [VendorController::class,'update_profile_vendor']);
     Route::post('update_profile_picture_vendor', [VendorController::class,'update_profile_picture_vendor']);
+    Route::post('update_category_vendor', [VendorController::class,'update_category_vendor']);
+    
 });
