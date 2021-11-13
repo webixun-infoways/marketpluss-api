@@ -17,6 +17,7 @@ use App\Models\Feed_Comment;
 use App\Models\Feed;
 use App\Models\Slider;
 use App\Models\Vendor_cover;
+use App\Models\Feed_contents;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -25,6 +26,68 @@ use Illuminate\Support\Facades\Crypt;
 class FeedController extends Controller
 {
     
+    //function for feed likes
+    public function add_feed(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'title' => 'required', 
+            'description'=>'required',
+            // 'feed_file'=> 'required|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048'
+        
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+        $feed=new Feed;
+        $feed->feed_title=$request->title;
+        $feed->feed_description=$request->description;
+        $feed->feed_status='active';
+        $feed->vendor_id=Auth::user()->id;
+
+        if($feed->save())
+        {
+            $response['status']=true;
+
+            if($files=$request->file('feed_file')){
+                $data=array();
+                foreach($files as $file){
+                    
+                    $path="feeds/";
+                     //create unique name of file uploaded.
+                    $name=time().'_'.$file->getClientOriginalExtension();
+                    
+                    if($file->move($path,$name))
+                    {
+                        $data[] = ['feed_id'=>$feed->id, 'content_src'=> $path."/".$name,'content_type' => 'image'];
+                    }
+                }
+
+                if(feed_content::insert($data))
+                {
+                    $response['status']=true;
+                    $response['msg']="Category Successfully Updated!";
+                }
+                else{
+                    Feed::where('id',$feed->id)->delete();
+                    $response['status']=false;
+                    $response['msg']="Category could not be updated!";
+                }
+            }
+
+            $response['msg']= $feed->id;;
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Not Updated";
+        }
+
+        echo json_encode($response); 
+    }
+
+
     //function for feed likes
     public function user_feed_like(Request $request)
     {
