@@ -20,13 +20,13 @@ use App\Http\Controllers\FeedController;
 
 //Open Routes for fetch the data globally 
 Route::get('fetch_home_sliders', [UserController::class,'fetch_home_sliders']);
-
+Route::get('get_category_vendor', [VendorController::class,'get_category_vendor']);
 
 //auth related routes
 Route::post('mobile-verification', [AuthController::class,'mobile_verification']);
 Route::post('otp-verification', [AuthController::class,'otp_verification']);
 Route::get('unauthorized', [AuthController::class,'unauthorized']);
-
+ Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
 
 //condition  for protect the user route
 Route::middleware('auth:api')->group(function () {
@@ -73,4 +73,7 @@ Route::middleware('auth:vendor-api')->group(function () {
     Route::post('vendor_update_product', [VendorController::class,'vendor_update_product']);
     Route::post('vendor_add_package', [VendorController::class,'vendor_add_package']);
     Route::post('vendor_update_package', [VendorController::class,'vendor_update_package']);
+    Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
+    
+    Route::post('get_vendor_data', [VendorController::class,'get_vendor_data']);
 });
