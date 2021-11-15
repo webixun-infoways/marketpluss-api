@@ -170,6 +170,38 @@ class VendorController extends Controller
     }
 
 
+    public function update_category_vendor(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'category_name'=> 'required',
+            'category_status'=> 'required',
+            'category_id'=>'required'
+        ]);
+
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+        
+        $category_id=$request->category_id;
+
+        $category = Vendor_category::find($category_id);
+
+        $category->name=$request->category_name;
+        $category->status=$request->category_status;
+
+        if($category->save())
+        {
+            $response['status']=true;
+            $response['msg']="Category Successfully Updated!";
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Category could not be updated!";
+        }
+        return json_encode($response);
+    }
+
     public function update_store_location(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
@@ -210,4 +242,91 @@ class VendorController extends Controller
         }
         return json_encode($response);
     }
+
+
+    //for add the product or services
+
+
+    public function vendor_add_product(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'latitude'=> 'required',
+            'longitude'=> 'required',
+            'area'=> 'required',
+            'city'=> 'required',
+            'state'=> 'required',
+            'address'=> 'required',
+            'pincode'=> 'required',
+        ]);
+
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+      
+    }
+
+    //update vendor servicess
+
+    public function vendor_update_product(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'latitude'=> 'required',
+            'longitude'=> 'required',
+            'area'=> 'required',
+            'city'=> 'required',
+            'state'=> 'required',
+            'address'=> 'required',
+            'pincode'=> 'required',
+        ]);
+
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+      
+    }
+
+    //add new packeges
+
+    public function vendor_add_package(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'latitude'=> 'required',
+            'longitude'=> 'required',
+            'area'=> 'required',
+            'city'=> 'required',
+            'state'=> 'required',
+            'address'=> 'required',
+            'pincode'=> 'required',
+        ]);
+
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+      
+    }
+
+
+    //update packages
+    public function vendor_update_package(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'latitude'=> 'required',
+            'longitude'=> 'required',
+            'area'=> 'required',
+            'city'=> 'required',
+            'state'=> 'required',
+            'address'=> 'required',
+            'pincode'=> 'required',
+        ]);
+
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+      
+    }
+
 }

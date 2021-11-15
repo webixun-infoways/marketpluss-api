@@ -77,7 +77,7 @@ class FeedController extends Controller
                 }
             }
 
-            $response['msg']= $feed->id;;
+            $response['msg']= "Feed added!";
         }
         else{
             $response['status']=false;

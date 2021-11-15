@@ -64,7 +64,13 @@ Route::middleware('auth:vendor-api')->group(function () {
     Route::post('update_main_category_vendor', [VendorController::class,'update_main_category_vendor']);
     Route::post('create_category_vendor', [VendorController::class,'create_category_vendor']);
     Route::post('update_store_location', [VendorController::class,'update_store_location']);
-
+    Route::post('update_category_vendor', [VendorController::class,'update_category_vendor']);
+    
     Route::post('add_feed', [FeedController::class,'add_feed']);
     
+
+    Route::post('vendor_add_product', [VendorController::class,'vendor_add_product']);
+    Route::post('vendor_update_product', [VendorController::class,'vendor_update_product']);
+    Route::post('vendor_add_package', [VendorController::class,'vendor_add_package']);
+    Route::post('vendor_update_package', [VendorController::class,'vendor_update_package']);
 });
