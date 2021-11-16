@@ -139,7 +139,59 @@ class UserController extends Controller
         }
 
         echo json_encode($response,JSON_UNESCAPED_SLASHES); 
-    }
+    
+        
+
+        public function follow_vendor_user(Request $request)
+	{
+		 $validator = Validator::make($request->all(), [ 
+            'vendor_id' => 'required',
+			 'type' => 'required',
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+		
+		
+		 if($request->type=='yes')
+        {
+            $feed=new Vendors_Subsciber;
+            $feed->user_id=Auth::user()->id;
+            $feed->vendor_id=$request->vendor_id;
+
+            if($feed->save())
+        {
+            $response['status']=true;
+            $response['msg']="Saved";
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Not Updated";
+        }
+        }
+        else if($request->type=='no'){
+
+            $res=Vendors_Subsciber::where('vendor_id',$request->vendor_id)->where('user_id',Auth::user()->id)->delete();
+
+            if($res)
+            {
+                $response['status']=true;
+                $response['msg']="UnSaved";
+            }
+            else{
+                $response['status']=false;
+                $response['msg']="Not Updated";
+            }
+        }
+        else{
+            $response['status']=false;
+                $response['msg']="Invalid type";
+        }
+		 echo json_encode($response,JSON_UNESCAPED_SLASHES);
+
+	}
     
 public function fetch_home_sliders()
 {
