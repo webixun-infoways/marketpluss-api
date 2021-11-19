@@ -16,7 +16,7 @@ class VendorController extends Controller
 {
     public function get_vendor_data(Request $request)
     {
-        $shop_visit=
+        $shop_visit="";
     }
      //function for update profile of user
      public function update_profile_vendor(Request $request)

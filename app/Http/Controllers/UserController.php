@@ -139,7 +139,7 @@ class UserController extends Controller
         }
 
         echo json_encode($response,JSON_UNESCAPED_SLASHES); 
-    
+    }
         
 
         public function follow_vendor_user(Request $request)
