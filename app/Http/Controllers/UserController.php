@@ -108,6 +108,7 @@ class UserController extends Controller
     }
 
 
+    //get vendor data 
     public function get_category_vendors(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
@@ -142,7 +143,7 @@ class UserController extends Controller
     }
         
 
-        public function follow_vendor_user(Request $request)
+    public function follow_vendor_user(Request $request)
 	{
 		 $validator = Validator::make($request->all(), [ 
             'vendor_id' => 'required',
@@ -193,8 +194,8 @@ class UserController extends Controller
 
 	}
     
-public function fetch_home_sliders()
-{
+    public function fetch_home_sliders()
+    {
     $data=Slider::all();
     
     if(count($data)>0)
@@ -208,9 +209,9 @@ public function fetch_home_sliders()
     }
 
     echo json_encode($response,JSON_UNESCAPED_SLASHES);
-}
+    }
 
-public function get_vendor_details(Request $request)
+    public function get_vendor_details(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
             'vendor_id' => 'required',
