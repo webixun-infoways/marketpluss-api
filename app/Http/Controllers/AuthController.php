@@ -103,7 +103,7 @@ class AuthController extends Controller
         	$user->access_token = 'Bearer '.$tokenResult->accessToken;
         	// $user->token_type = ;
 
-			if($user->name == "")
+			if($user->name == " " || $user->name == null)
 			{
             	//now return this token on success login attempt
 				$response = ['msg' => 'ok','token' => $user->access_token,'user_type' => 'register','usr' => Crypt::encryptString($user->id)];
@@ -134,7 +134,7 @@ class AuthController extends Controller
         	$vendor->access_token = 'Bearer '.$tokenResult->accessToken;
         	// $user->token_type = ;
 
-			if($vendor->name == "")
+			if($vendor->name == " " || $vendor->name == null)
 			{
             	//now return this token on success login attempt
 				$response = ['msg' => 'ok','token' => $vendor->access_token,'user_type' => 'register','usr' => Crypt::encryptString($vendor->id)];
