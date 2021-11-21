@@ -124,9 +124,17 @@ class UserController extends Controller
     	}
 
         $cat= $request->category_id;
-        $data=DB::table('vendors')->select("id",'shop_name','profile_pic')->whereIn('id', function ($query) use ($cat){
+
+        $haversine = "(6371 * acos(cos(radians(" . $request->latitude . ")) 
+        * cos(radians(`shop_latitude`)) 
+        * cos(radians(`shop_longitude`) 
+        - radians(" . $request->longitude . ")) 
+        + sin(radians(" . $request->latitude . ")) 
+        * sin(radians(`shop_latitude`))))";
+
+        $data=DB::table('vendors')->select("id",'shop_name','profile_pic' )->selectRaw("{$haversine} AS distance")->whereIn('id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
-        })->paginate($request->page_id);
+        })->having('distance','>','25')->orderBy('distance')->paginate($request->page_id);
         
         if(count($data)>0)
         {
@@ -296,6 +304,14 @@ class UserController extends Controller
 
         $vendor_id=$request->vendor_id;
 
+
+        $haversine = "(6371 * acos(cos(radians(" . $request->latitude . ")) 
+        * cos(radians(`shop_latitude`)) 
+        * cos(radians(`shop_longitude`) 
+        - radians(" . $request->longitude . ")) 
+        + sin(radians(" . $request->latitude . ")) 
+        * sin(radians(`shop_latitude`))))";
+
         if($request->vendor_id != 0)
         {
            
@@ -310,18 +326,21 @@ class UserController extends Controller
         }
         else{
 
+        
             if($request->category_id != 0)
             {
                 $cate_id=$request->category_id;
-                $store_data=Vendor_Product::whereIn('id',function($q) use($vendor_id){
+                $store_data=Vendor::join('vendor_products','vendor_products.vendor_id','vendors.id')->selectRaw("{$haversine} AS distance")->whereIn('vendor_products.id',function($q) use($vendor_id){
            
                     $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
                     
                         $qe->from('vendor_offers')->selectRaw('id');
                     });
-                    })->whereIn('vendor_id',function($q) use($cate_id){
+                    })->whereIn('vendor_products.vendor_id',function($q) use($cate_id){
                         $q->from('vendor_main_categories')->selectRaw('vendor_id')->where('category_id',$cate_id);
-                    });
+                    })->having('distance','>','25')->orderBy('distance');
+
+                    // return $store_data;
             }
             else{
                 $store_data=Vendor_Product::whereIn('id',function($q) use($vendor_id){
