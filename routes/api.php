@@ -47,14 +47,14 @@ Route::middleware('auth:api')->group(function () {
     Route::post('user_feed_like', [FeedController::class,'user_feed_like']);
     Route::post('user_feed_save', [FeedController::class,'user_feed_save']);
     Route::post('feed_report_user', [FeedController::class,'feed_report_user']);
-
+    Route::get('get_feed_comment', [FeedController::class,'get_feed_comment']);
     Route::post('add_feed_comment', [FeedController::class,'add_feed_comment']);
     Route::post('edit_feed_comment', [FeedController::class,'edit_feed_comment']);
     Route::post('delete_feed_comment', [FeedController::class,'delete_feed_comment']);
-     
+    Route::post('get_vendor_offers', [UserController::class,'get_vendor_offers']);
 });
 
-Route::get('get_feed_comment', [FeedController::class,'get_feed_comment']);
+
 
 //condition  for protect the vendor route
 Route::middleware('auth:vendor-api')->group(function () {
@@ -76,4 +76,7 @@ Route::middleware('auth:vendor-api')->group(function () {
     Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
     
     Route::post('get_vendor_data', [VendorController::class,'get_vendor_data']);
+    Route::post('edit_vendor_offer', [VendorController::class,'update_vendor_offer']);
+   
+    
 });

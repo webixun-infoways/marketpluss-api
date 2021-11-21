@@ -279,4 +279,72 @@ class UserController extends Controller
          echo json_encode($response,JSON_UNESCAPED_SLASHES);
     }
 
+
+    public function get_vendor_offers(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'vendor_id'=>'required',
+            'latitude'=>'required',
+            'longitude' => 'required',
+            'category_id' =>'required'
+        ]);
+
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+
+        $vendor_id=$request->vendor_id;
+
+        if($request->vendor_id != 0)
+        {
+           
+            //fetch store details of vendor
+            $store_data=Vendor_Product::where('vendor_id',$request->vendor_id)->whereIn('id',function($q) use($vendor_id){
+           
+            $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
+            
+                $qe->from('vendor_offers')->selectRaw('id')->where('vendor_id',$vendor_id);
+            });
+            })->get();
+        }
+        else{
+
+            if($request->category_id != 0)
+            {
+                $cate_id=$request->category_id;
+                $store_data=Vendor_Product::whereIn('id',function($q) use($vendor_id){
+           
+                    $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
+                    
+                        $qe->from('vendor_offers')->selectRaw('id');
+                    });
+                    })->whereIn('vendor_id',function($q) use($cate_id){
+                        $q->from('vendor_main_categories')->selectRaw('vendor_id')->where('category_id',$cate_id);
+                    });
+            }
+            else{
+                $store_data=Vendor_Product::whereIn('id',function($q) use($vendor_id){
+           
+                    $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
+                    
+                        $qe->from('vendor_offers')->selectRaw('id');
+                    });
+                    })->get();
+            }
+        }
+        
+        
+        if($store_data!=null)
+        {
+            $response['status']=true;
+            $response['data']=$store_data;
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Invalid Category, Try Again.";
+        }
+
+        echo json_encode($response,JSON_UNESCAPED_SLASHES);
+    }
 }

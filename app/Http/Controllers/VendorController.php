@@ -583,33 +583,57 @@ class VendorController extends Controller
         {
             if(Vendor_Offer_Product::where('offer_id',$request->offer_id)->delete())
             {
-            $offer_id=$offer->id;
-            $data=array();
-            foreach($request->products as $pp)
-            {
-                $data[]=["offer_id"=>$offer_id,"product_id"=>$pp];
-            }
+                $offer_id=$request->offer_id;
+                $data=array();
+                foreach($request->products as $pp)
+                {
+                    $data[]=["offer_id"=>$offer_id,"product_id"=>$pp];
+                }
 
-            foreach($request->packages as $pp)
-            {
-                $data[]=["offer_id"=>$offer_id,"product_id"=>$pp];
-            }
+                foreach($request->packages as $pp)
+                {
+                    $data[]=["offer_id"=>$offer_id,"product_id"=>$pp];
+                }
 
-            if(Vendor_Offer_Product::insert($data))
-            {
-                $response['status']=true;
-                $response['msg']="Offer Added!";
+                if(Vendor_Offer_Product::insert($data))
+                {
+                    $response['status']=true;
+                    $response['msg']="Offer Updated!";
+                }
+                else
+                {
+                    $response['status']=false;
+                    $response['msg']="Offer could not be Updated!";
+                }
             }
-            else
-            {
-                $response['status']=false;
-                $response['msg']="Offer could not be Added!";
+            else{
+                $offer_id=$request->offer_id;
+                $data=array();
+                foreach($request->products as $pp)
+                {
+                    $data[]=["offer_id"=>$offer_id,"product_id"=>$pp];
+                }
+
+                foreach($request->packages as $pp)
+                {
+                    $data[]=["offer_id"=>$offer_id,"product_id"=>$pp];
+                }
+
+                if(Vendor_Offer_Product::insert($data))
+                {
+                    $response['status']=true;
+                    $response['msg']="Offer Updated!";
+                }
+                else
+                {
+                    $response['status']=false;
+                    $response['msg']="Offer could not be Updated!";
+                }
             }
-        }
         }
         else{
                 $response['status']=false;
-                $response['msg']="Offer could not be Added!";
+                $response['msg']="Offer could not be Updated!";
             
         }
 
@@ -644,6 +668,9 @@ class VendorController extends Controller
             }
             return json_encode($response);
     }
+
+
+   
     // //add new packeges
 
     // public function vendor_add_package(Request $request)
