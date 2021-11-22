@@ -16,12 +16,42 @@ use App\Models\Feed_Comment;
 use App\Models\Feed;
 use App\Models\Slider;
 use App\Models\Vendor_cover;
+use App\Models\Category;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 class UserController extends Controller
 {
+    //fetch front category for user & vendor
+    public function get_all_category(Request $request)
+    {
+        $category=Category::all();
+        $response['data']=$category;
+
+        return json_encode($response);
+    }
+
+    //get user profile 
+    public function get_user_profile(Request $request)
+    {
+        $user_id=Auth::user()->id;
+        $user=User::find($user_id);
+
+        if($user!=null)
+        {
+            $response['status']=true;
+            $response['data']=$user;
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Invalid token";
+        }
+
+        return json_encode($response);
+    }
+
+
     //function for update profile of user
     public function update_profile(Request $request)
     {

@@ -21,6 +21,7 @@ use App\Http\Controllers\FeedController;
 //Open Routes for fetch the data globally 
 Route::get('fetch_home_sliders', [UserController::class,'fetch_home_sliders']);
 Route::get('get_category_vendor', [VendorController::class,'get_category_vendor']);
+Route::get('get_all_category', [UserController::class,'get_all_category']);
 
 //auth related routes
 Route::post('mobile-verification', [AuthController::class,'mobile_verification']);
@@ -34,7 +35,8 @@ Route::middleware('auth:api')->group(function () {
     // User Profile related routes
     Route::post('update_profile', [UserController::class,'update_profile']);
     Route::post('update_profile_picture', [UserController::class,'update_profile_picture']);
-   
+    Route::post('get_user_profile', [UserController::class,'get_user_profile']);
+    
    //vendors related Routes
     Route::post('follow_vendor_user',[UserController::class,'follow_vendor_user']);
     Route::post('get_category_vendors', [UserController::class,'get_category_vendors']);
@@ -59,6 +61,7 @@ Route::middleware('auth:api')->group(function () {
 //condition  for protect the vendor route
 Route::middleware('auth:vendor-api')->group(function () {
     // our routes to be protected will go in here
+    Route::post('get_vendor_profile', [VendorController::class,'get_vendor_profile']);
     Route::post('update_profile_vendor', [VendorController::class,'update_profile_vendor']);
     Route::post('update_profile_picture_vendor', [VendorController::class,'update_profile_picture_vendor']);
     Route::post('update_main_category_vendor', [VendorController::class,'update_main_category_vendor']);

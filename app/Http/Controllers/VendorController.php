@@ -18,6 +18,27 @@ class VendorController extends Controller
     {
         $shop_visit="";
     }
+
+      //get user profile 
+      public function get_vendor_profile(Request $request)
+      {
+          $user_id=Auth::user()->id;
+          $user=Vendor::find($user_id);
+  
+          if($user!=null)
+          {
+              $response['status']=true;
+              $response['data']=$user;
+          }
+          else{
+              $response['status']=false;
+              $response['msg']="Invalid token";
+          }
+  
+          return json_encode($response);
+      }
+
+
      //function for update profile of user
      public function update_profile_vendor(Request $request)
      {
