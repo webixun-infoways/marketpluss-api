@@ -26,6 +26,8 @@ Route::get('get_all_category', [UserController::class,'get_all_category']);
 //auth related routes
 Route::post('mobile-verification', [AuthController::class,'mobile_verification']);
 Route::post('otp-verification', [AuthController::class,'otp_verification']);
+
+
 Route::get('unauthorized', [AuthController::class,'unauthorized']);
  Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
 
@@ -40,8 +42,8 @@ Route::middleware('auth:api')->group(function () {
    //vendors related Routes
     Route::post('follow_vendor_user',[UserController::class,'follow_vendor_user']);
     Route::post('get_category_vendors', [UserController::class,'get_category_vendors']);
-    Route::post('get_vendor_details', [UserController::class,'get_vendor_details']);
-    Route::post('get_vendor_product', [UserController::class,'get_vendor_product']);
+    Route::post('get_vendor_details', [VendorController::class,'get_vendor_details']);
+    Route::post('get_vendor_product', [VendorController::class,'get_vendor_product']);
     
     //Feed related routes 
 
@@ -53,7 +55,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('add_feed_comment', [FeedController::class,'add_feed_comment']);
     Route::post('edit_feed_comment', [FeedController::class,'edit_feed_comment']);
     Route::post('delete_feed_comment', [FeedController::class,'delete_feed_comment']);
-    Route::post('get_vendor_offers', [UserController::class,'get_vendor_offers']);
+    Route::post('get_vendor_offers', [VendorController::class,'get_vendor_offers']);
+    Route::post('logout_user', [AuthController::class,'logout']);
 });
 
 
@@ -81,5 +84,5 @@ Route::middleware('auth:vendor-api')->group(function () {
     Route::post('get_vendor_data', [VendorController::class,'get_vendor_data']);
     Route::post('edit_vendor_offer', [VendorController::class,'update_vendor_offer']);
    
-    
+    Route::post('logout_vendor', [AuthController::class,'logout']);
 });

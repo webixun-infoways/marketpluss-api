@@ -9,6 +9,10 @@ use App\Models\vendor_main_categories;
 use App\Models\Vendor_category;
 use App\Models\Vendor_Offer;
 use App\Models\Vendor_Offer_Product;
+use App\Models\vendor_shop_visit;
+use App\Models\Vendors_Subsciber;
+use App\Models\Feed_Save;
+use App\Models\Feed;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
@@ -16,7 +20,21 @@ class VendorController extends Controller
 {
     public function get_vendor_data(Request $request)
     {
-        $shop_visit="";
+        $vendor_id=Auth::user()->id;
+
+        $response['shop_visit']=vendor_shop_visit::where('vendor_id',$vendor_id)->where('user_activity','shop_visit')->count();
+        $response['contact']=vendor_shop_visit::where('vendor_id',$vendor_id)->where('user_activity','contact')->count();
+
+        $response['followers']=Vendors_Subsciber::where('vendor_id',$vendor_id)->count();
+        $response['feed_save']=Feed_Save::whereIn('feed_id', function($q) use($vendor_id){
+            $q->from('feeds')->where('vendor_id',$vendor_id)->selectRaw('id');
+        })->count();
+
+        $response['feed_view']=Feed::where('vendor_id',$vendor_id)->sum('feed_view');
+
+        $res['status']=true;
+        $res['data']=$response;
+        return json_encode($res);
     }
 
       //get user profile 
@@ -519,7 +537,7 @@ class VendorController extends Controller
     {
         $validator = Validator::make($request->all(), [ 
             'offer_name'=> 'required',
-            'offer_type'=> 'required',
+            // 'offer_type'=> 'required',
             'offer'=> 'required',
             'start_date'=> 'required',
             'end_date'=>'required',
@@ -534,7 +552,7 @@ class VendorController extends Controller
         $offer=new Vendor_Offer;
         $vendor_id=Auth::user()->id;
         $offer->offer_name=$request->offer_name;
-        $offer->offer_type=$request->offer_type;
+        // $offer->offer_type=$request->offer_type;
         $offer->offer=$request->offer;
         $offer->start_from=$request->start_date;
         $offer->start_to =$request->end_date;
@@ -691,91 +709,168 @@ class VendorController extends Controller
     }
 
 
-   
-    // //add new packeges
+    public function get_vendor_details(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'vendor_id' => 'required',
+            'latitude'=>'required',
+            'longitude'=>'required'
+        ]);
 
-    // public function vendor_add_package(Request $request)
-    // {
-    //     $validator = Validator::make($request->all(), [ 
-    //         'name'=> 'required',
-    //         'vendor_category_id'=> 'required',
-    //         'market_price'=> 'required',
-    //         'price'=> 'required',
-    //         'product_img'=> 'required',
-    //     ]);
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
 
-    //     if ($validator->fails())
-    //     {
-    //         return response(['errors'=>$validator->errors()->all()], 422);
-    //     }
+        //fetch store details of vendor
+        $store_data=Vendor::find($request->vendor_id);
         
-    //     $vendor_id=Auth::user()->id;
+        // echo $store_data;
+        // exit;
+        if($store_data!=null)
+        {
+            $response['status']=true;
+            $response['data']=$store_data;
 
-    //      //condition to check iF file exits or not
-    //      if($request->hasFile('product_img'))
-    //      {
-    //          $pic=$request->file('product_img');
-    //          $path="products/";
+            $response['covers']=Vendor_cover::where('vendor_id',$request->vendor_id)->get();
+            
+            $response['categories']=Vendor_category::where('vendor_id',$request->vendor_id)->get();
+
+            $response['products']=Vendor_Product::where('vendor_id',$request->vendor_id)->get();
+
+            $response['data']['followers']=Vendors_Subsciber::where('vendor_id',$request->vendor_id)->count();
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Invalid Vendor Id, Try Again.";
+        }
+
+        echo json_encode($response,JSON_UNESCAPED_SLASHES); 
+    }
+
+
+    public function get_vendor_product(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'vendor_category_id' => 'required',
+            'product_type'=>'required'
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+        if($request_category_id != 0 && $request->product_type == 'product')
+        {
+             //fetch store details of vendor
+             $store_data=Vendor_Product::where('vendor_category_id',$request->vendor_category_id)->get();
+        }
+        else if($request_category_id == 0 && $request->product_type == 'product')
+        {    
+            //fetch store details of vendor
+            $store_data=Vendor_Product::where('type',$request->product_type)->get();
+        }
+        else if($request_category_id != 0 && $request->product_type == 'package')
+        {    
+            //fetch store details of vendor
+            $store_data=Vendor_Product::where('type',$request->product_type)->get();
+        }
+        else
+        {    
+            //fetch store details of vendor
+            $store_data=Vendor_Product::where('type',$request->product_type)->get();
+        }
+        
+        
+         // echo $store_data;
+         // exit;
+         if($store_data!=null)
+         {
+             $response['status']=true;
+             $response['data']=$store_data;
+         }
+         else{
+             $response['status']=false;
+             $response['msg']="Invalid Category, Try Again.";
+         }
  
-    //          //create unique name of file uploaded.
-    //          $name=time().'_'.$pic->getClientOriginalExtention();
-    //          if($pic->move($path,$name))
-    //          {
-    //             $path=$path."/".$name;
-
-    //             $v_product=new Vendor_Package;
-    //             $v_product->product_name=$request->name;
-    //             $v_product->market_price=$request->market_price;
-    //             $v_product->our_price=$request->price;
-    //             $v_product->description=$request->description;
-    //             $v_product->status='active';
-    //             $v_product->vendor_id=$vendor_id;
-    //             $v_product->vendor_category_id=$request->vendor_category_id;
-    //             $v_product->product_img=$request->$path;
-                
-    //             if($v_product->save())
-    //             {
-    //                 $response['status']=true;
-    //                 $response['msg']="Product Added!";
-    //             }
-    //             else
-    //             {
-    //                 $response['status']=false;
-    //                 $response['msg']="Product could not be Added!";
-    //             }
-    //          }
-    //          else{
-    //              $response['status']=false;
-    //              $response['msg']="img could not be updated!";
-    //          }
-      
-    //      }
-    //      else{
-    //          $response['status']=false;
-    //          $response['msg']="Invalid File";
-    //      }
-      
-    // }
+         echo json_encode($response,JSON_UNESCAPED_SLASHES);
+    }
 
 
-    // //update packages
-    // public function vendor_update_package(Request $request)
-    // {
-    //     $validator = Validator::make($request->all(), [ 
-    //         'latitude'=> 'required',
-    //         'longitude'=> 'required',
-    //         'area'=> 'required',
-    //         'city'=> 'required',
-    //         'state'=> 'required',
-    //         'address'=> 'required',
-    //         'pincode'=> 'required',
-    //     ]);
+    public function get_vendor_offers(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'vendor_id'=>'required',
+            'latitude'=>'required',
+            'longitude' => 'required',
+            'category_id' =>'required'
+        ]);
 
-    //     if ($validator->fails())
-    //     {
-    //         return response(['errors'=>$validator->errors()->all()], 422);
-    //     }
-      
-    // }
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+
+        $vendor_id=$request->vendor_id;
+
+        $haversine = "(6371 * acos(cos(radians(" . $request->latitude . ")) 
+        * cos(radians(`shop_latitude`)) 
+        * cos(radians(`shop_longitude`) 
+        - radians(" . $request->longitude . ")) 
+        + sin(radians(" . $request->latitude . ")) 
+        * sin(radians(`shop_latitude`))))";
+
+        if($request->vendor_id != 0)
+        {
+           //fetch store details of vendor
+            $store_data=Vendor_Product::where('vendor_id',$request->vendor_id)->whereIn('id',function($q) use($vendor_id){
+           
+            $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
+            
+                $qe->from('vendor_offers')->selectRaw('id')->where('vendor_id',$vendor_id);
+            });
+            })->get();
+        }
+        else{
+
+            if($request->category_id != 0)
+            {
+                $cate_id=$request->category_id;
+                $store_data=Vendor::join('vendor_products','vendor_products.vendor_id','vendors.id')->selectRaw("{$haversine} AS distance")->whereIn('vendor_products.id',function($q) use($vendor_id){
+                    $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
+                        $qe->from('vendor_offers')->selectRaw('id');
+                    });
+                    })->whereIn('vendors.id',function($q) use($cate_id){
+                        $q->from('vendor_main_categories')->selectRaw('vendor_id')->where('category_id',$cate_id);
+                    })->having('distance','<','25')->orderBy('distance');
+
+            }
+            else{
+                $store_data=Vendor_Product::whereIn('id',function($q) use($vendor_id){
+           
+                    $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
+                    
+                        $qe->from('vendor_offers')->selectRaw('id');
+                    });
+                    })->get();
+            }
+        }
+        
+        
+        if($store_data!=null)
+        {
+            $response['status']=true;
+            $response['data']=$store_data;
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Invalid Category, Try Again.";
+        }
+
+        echo json_encode($response,JSON_UNESCAPED_SLASHES);
+    }
+    
 
 }

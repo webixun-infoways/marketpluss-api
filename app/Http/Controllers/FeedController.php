@@ -154,10 +154,10 @@ class FeedController extends Controller
 
         if($request->vendor_id==0)
         {
-            $response=Feed::addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->orderByDesc('updated_at')->paginate($request->page_id);
+            $response=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->orderByDesc('updated_at')->paginate($request->page_id);
         }
         else{
-            $response=Feed::addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->where('vendor_id','=',$request->vendor_id)->orderByDesc('updated_at')->paginate($request->page_id);
+            $response=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->where('vendor_id','=',$request->vendor_id)->orderByDesc('updated_at')->paginate($request->page_id);
         }
         
     
