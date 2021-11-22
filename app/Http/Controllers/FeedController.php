@@ -358,5 +358,35 @@ class FeedController extends Controller
         echo json_encode($response); 
     }
 
+    //function for update feed view
+    public function update_feed_view(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'feed_id' => 'required', 
+        ]);
 
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+
+        $user_id=Auth::user()->id;
+
+        $feed=Feed::find($request->feed_id);
+
+        $feed->feed_view=$feed->feed_view+1;
+
+        if($feed->save())
+        {
+            $response['status']=true;
+            $response['msg']="updated";
+        }
+        else{
+            $response['status']=false;
+                $response['msg']="not updated";
+        }
+        return json_encode($response);
+    }
+    
 }

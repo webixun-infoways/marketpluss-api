@@ -872,5 +872,36 @@ class VendorController extends Controller
         echo json_encode($response,JSON_UNESCAPED_SLASHES);
     }
     
+    public function update_shop_visit(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'vendor_id'=>'required',
+            'update_type'=>'required'
+        ]);
 
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+
+        $user_id=Auth::user()->id;
+        
+        $shop_visit = new vendor_shop_visit;
+
+        $shop_visit->user_id=$user_id;
+        $shop_visit->vendor_id=$request->vendor_id;
+        $shop_visit->user_activity=$request->update_type;
+        if($shop_visit->save())
+        {
+                $response['status']=true;
+                $response['msg']="Updated!";
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="not updated!";
+        }
+        return json_encode($response);
+    }
+    
+    
 }

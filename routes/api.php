@@ -44,18 +44,22 @@ Route::middleware('auth:api')->group(function () {
     Route::post('get_category_vendors', [UserController::class,'get_category_vendors']);
     Route::post('get_vendor_details', [VendorController::class,'get_vendor_details']);
     Route::post('get_vendor_product', [VendorController::class,'get_vendor_product']);
-    
+    Route::post('update_shop_visit_contact', [VendorController::class,'update_shop_visit']);
+    Route::post('get_vendor_offers', [VendorController::class,'get_vendor_offers']);
     //Feed related routes 
 
     Route::post('get_user_feeds', [FeedController::class,'user_feed_view']);
     Route::post('user_feed_like', [FeedController::class,'user_feed_like']);
     Route::post('user_feed_save', [FeedController::class,'user_feed_save']);
+    Route::post('update_feed_view', [FeedController::class,'update_feed_view']);
     Route::post('feed_report_user', [FeedController::class,'feed_report_user']);
     Route::get('get_feed_comment', [FeedController::class,'get_feed_comment']);
     Route::post('add_feed_comment', [FeedController::class,'add_feed_comment']);
     Route::post('edit_feed_comment', [FeedController::class,'edit_feed_comment']);
     Route::post('delete_feed_comment', [FeedController::class,'delete_feed_comment']);
-    Route::post('get_vendor_offers', [VendorController::class,'get_vendor_offers']);
+   
+
+    //for logout 
     Route::post('logout_user', [AuthController::class,'logout']);
 });
 
