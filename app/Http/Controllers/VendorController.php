@@ -11,6 +11,7 @@ use App\Models\Vendor_Offer;
 use App\Models\Vendor_Offer_Product;
 use App\Models\vendor_shop_visit;
 use App\Models\Vendors_Subsciber;
+use App\Models\Vendor_cover;
 use App\Models\Feed_Save;
 use App\Models\Feed;
 use Illuminate\Support\Facades\Auth;
