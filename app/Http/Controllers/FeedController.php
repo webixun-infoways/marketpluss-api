@@ -57,7 +57,7 @@ class FeedController extends Controller
                     
                     $path="feeds/";
                      //create unique name of file uploaded.
-                    $name=time().'_'.$file->getClientOriginalExtension();
+                    $name=time().'_'.$file->getClientOriginalName();
                     
                     if($file->move($path,$name))
                     {

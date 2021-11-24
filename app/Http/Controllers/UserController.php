@@ -89,7 +89,7 @@ class UserController extends Controller
     public function update_profile_picture(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
-            'update_profile_picture'=> 'required|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048'
+            'update_profile_picture'=> 'required|image|mimes:jpeg,png,jpg,gif,webp,svg,tmp'
         ]);
 
 		if ($validator->fails())
@@ -97,15 +97,17 @@ class UserController extends Controller
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
         
+	
         //condition to check iF file exits or not
         if($request->hasFile('update_profile_picture'))
         {
+			
             $pic=$request->file('update_profile_picture');
 
-            $path="profile_pic/";
+            $path="profile_pic";
 
             //create unique name of file uploaded.
-            $name=time().'_'.$pic->getClientOriginalExtention();
+            $name=time().'_'.$pic->getClientOriginalName();
             if($pic->move($path,$name))
             {
                 $user_id=Auth::user()->id;

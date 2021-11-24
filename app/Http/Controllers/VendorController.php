@@ -112,7 +112,7 @@ class VendorController extends Controller
              $path="shop_pic/";
  
              //create unique name of file uploaded.
-             $name=time().'_'.$pic->getClientOriginalExtention();
+             $name=time().'_'.$pic->getClientOriginalName();
              if($pic->move($path,$name))
              {
                 $vendor_id=Auth::user()->id;
@@ -165,7 +165,7 @@ class VendorController extends Controller
              $path="shop_pic/";
  
              //create unique name of file uploaded.
-             $name=time().'_'.$pic->getClientOriginalExtention();
+             $name=time().'_'.$pic->getClientOriginalName();
              if($pic->move($path,$name))
              {
                 $vendor_id=Auth::user()->id;
@@ -410,7 +410,7 @@ class VendorController extends Controller
              $path="products/";
  
              //create unique name of file uploaded.
-             $name=time().'_'.$pic->getClientOriginalExtention();
+             $name=time().'_'.$pic->getClientOriginalName();
              if($pic->move($path,$name))
              {
                 $path=$path."/".$name;
@@ -477,7 +477,7 @@ class VendorController extends Controller
              $path="products/";
  
              //create unique name of file uploaded.
-             $name=time().'_'.$pic->getClientOriginalExtention();
+             $name=time().'_'.$pic->getClientOriginalName();
              if($pic->move($path,$name))
              {
                 $path=$path."/".$name;
