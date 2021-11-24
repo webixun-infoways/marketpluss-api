@@ -29,7 +29,7 @@ Route::post('otp-verification', [AuthController::class,'otp_verification']);
 
 
 Route::get('unauthorized', [AuthController::class,'unauthorized']);
- Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
+Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
 
 //condition  for protect the user route
 Route::middleware('auth:api')->group(function () {

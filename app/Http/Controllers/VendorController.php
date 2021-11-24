@@ -12,6 +12,8 @@ use App\Models\Vendor_Offer_Product;
 use App\Models\vendor_shop_visit;
 use App\Models\Vendors_Subsciber;
 use App\Models\Vendor_cover;
+use App\Models\Vendor_Product;
+
 use App\Models\Feed_Save;
 use App\Models\Feed;
 use Illuminate\Support\Facades\Auth;
@@ -94,7 +96,7 @@ class VendorController extends Controller
      public function update_profile_picture_vendor(Request $request)
      {
          $validator = Validator::make($request->all(), [ 
-             'update_profile_picture'=> 'required|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048'
+             'update_profile_picture'=> 'required|image|mimes:jpeg,png,jpg,gif,webp,svg'
          ]);
  
          if ($validator->fails())
