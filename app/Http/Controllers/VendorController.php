@@ -387,6 +387,7 @@ class VendorController extends Controller
 
     public function vendor_add_product(Request $request)
     {
+		//return $request;
         $validator = Validator::make($request->all(), [ 
             'product_name'=> 'required',
             'vendor_category_id'=> 'required',
@@ -417,13 +418,13 @@ class VendorController extends Controller
 
                 $v_product=new Vendor_Product;
                 $v_product->product_name=$request->product_name;
-                $v_product->market_price=$request->product_market_price;
+                $v_product->market_price=$request->market_price;
                 $v_product->our_price=$request->price;
                 $v_product->description=$request->description;
                 $v_product->status='active';
                 $v_product->vendor_id=$vendor_id;
                 $v_product->vendor_category_id=$request->vendor_category_id;
-                $v_product->product_img=$request->$path;
+                $v_product->product_img=$name;
                 $v_product->type=$request->type;
                 if($v_product->save())
                 {
@@ -484,13 +485,13 @@ class VendorController extends Controller
 
                 $v_product= Vendor_Product::find($request->product_id);
                 $v_product->product_name=$request->product_name;
-                $v_product->market_price=$request->product_market_price;
+                $v_product->market_price=$request->market_price;
                 $v_product->our_price=$request->price;
                 $v_product->description=$request->description;
                 $v_product->status='active';
                 $v_product->vendor_id=$vendor_id;
                 $v_product->vendor_category_id=$request->vendor_category_id;
-                $v_product->product_img=$request->$path;
+                $v_product->product_img=$name;
                 $v_product->type=$request->type;
                 
                 if($v_product->save())
@@ -763,18 +764,18 @@ class VendorController extends Controller
     	{
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
-
-        if($request_category_id != 0 && $request->product_type == 'product')
+        //return $request_category_id;
+        if($request->vendor_category_id != 0 && $request->product_type == 'product')
         {
              //fetch store details of vendor
              $store_data=Vendor_Product::where('vendor_category_id',$request->vendor_category_id)->get();
         }
-        else if($request_category_id == 0 && $request->product_type == 'product')
+        else if($request->vendor_category_id == 0 && $request->product_type == 'product')
         {    
             //fetch store details of vendor
             $store_data=Vendor_Product::where('type',$request->product_type)->get();
         }
-        else if($request_category_id != 0 && $request->product_type == 'package')
+        else if($request->vendor_category_id != 0 && $request->product_type == 'package')
         {    
             //fetch store details of vendor
             $store_data=Vendor_Product::where('type',$request->product_type)->get();
