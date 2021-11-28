@@ -106,12 +106,12 @@ class AuthController extends Controller
 			if($user->name == " " || $user->name == null)
 			{
             	//now return this token on success login attempt
-				$response = ['msg' => 'ok','token' => $user->access_token,'user_type' => 'register','usr' => Crypt::encryptString($user->id)];
+				$response = ['msg' => 'ok','token' => $user->access_token,'user_type' => 'register','usr' => $user->id];
 			}
 			else
 			{
 				 //now return this token on success login attempt
-				$response = ['msg' => 'ok','token' => $user->access_token,'user_type' => 'login','usr' => Crypt::encryptString($user->id)];
+				$response = ['msg' => 'ok','token' => $user->access_token,'user_type' => 'login','usr' => $user->id];
 			
 			}
 
@@ -137,12 +137,12 @@ class AuthController extends Controller
 			if($vendor->name == " " || $vendor->name == null)
 			{
             	//now return this token on success login attempt
-				$response = ['msg' => 'ok','token' => $vendor->access_token,'user_type' => 'register','usr' => Crypt::encryptString($vendor->id)];
+				$response = ['msg' => 'ok','token' => $vendor->access_token,'user_type' => 'register','usr' =>$vendor->id];
 			}
 			else
 			{
 				 //now return this token on success login attempt
-				$response = ['msg' => 'ok','token' => $vendor->access_token,'user_type' => 'login','usr' => Crypt::encryptString($vendor->id)];
+				$response = ['msg' => 'ok','token' => $vendor->access_token,'user_type' => 'login','usr' => $vendor->id];
 			
 			}
 			return $response;
@@ -156,9 +156,13 @@ class AuthController extends Controller
 	{
 		if (Auth::check()) {
 			Auth::user()->token()->revoke();
-			return response()->json(['success' =>'logout_success'],200); 
+		     $response['status']=true;
+             $response['msg'] = "Logout Successfull!";
+			return json_encode($response);
 		}else{
-			return response()->json(['error' =>'api.something_went_wrong'], 500);
+			 $response['status']=false;
+             $response['msg'] = "Failed!";
+			return json_encode($response);
 		}
 	}
 

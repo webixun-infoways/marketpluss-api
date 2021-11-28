@@ -38,7 +38,10 @@ Route::middleware('auth:api')->group(function () {
     Route::post('update_profile', [UserController::class,'update_profile']);
     Route::post('update_profile_picture', [UserController::class,'update_profile_picture']);
     Route::post('get_user_profile', [UserController::class,'get_user_profile']);
-    
+  
+	Route::post('add_feed_user', [FeedController::class,'add_feed']);
+	Route::post('search_all', [UserController::class,'search_all']);
+	
    //vendors related Routes
     Route::post('follow_vendor_user',[UserController::class,'follow_vendor_user']);
     Route::post('get_category_vendors', [UserController::class,'get_category_vendors']);
@@ -46,8 +49,13 @@ Route::middleware('auth:api')->group(function () {
     Route::post('get_vendor_product', [VendorController::class,'get_vendor_product']);
     Route::post('update_shop_visit_contact', [VendorController::class,'update_shop_visit']);
     Route::post('get_vendor_offers', [VendorController::class,'get_vendor_offers']);
-    //Feed related routes 
-
+	
+	Route::post('recent_view_shops', [UserController::class,'recent_view_shops']);
+	
+	Route::post('user_add_fevourite', [UserController::class,'user_add_favourite']);
+	Route::post('user_get_fevourite', [UserController::class,'user_get_favourite']);
+    
+	//Feed related routes 
     Route::post('get_user_feeds', [FeedController::class,'user_feed_view']);
     Route::post('user_feed_like', [FeedController::class,'user_feed_like']);
     Route::post('user_feed_save', [FeedController::class,'user_feed_save']);
@@ -57,6 +65,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('add_feed_comment', [FeedController::class,'add_feed_comment']);
     Route::post('edit_feed_comment', [FeedController::class,'edit_feed_comment']);
     Route::post('delete_feed_comment', [FeedController::class,'delete_feed_comment']);
+    Route::post('get_saved_feed', [FeedController::class,'get_saved_feed']);
    
 
     //for logout 
@@ -78,7 +87,7 @@ Route::middleware('auth:vendor-api')->group(function () {
     
     Route::post('add_feed', [FeedController::class,'add_feed']);
     
-
+	Route::post('update_cover_vendor', [VendorController::class,'update_cover_vendor']);
     Route::post('vendor_add_product', [VendorController::class,'vendor_add_product']);
     Route::post('vendor_update_product', [VendorController::class,'vendor_update_product']);
     Route::post('vendor_add_package', [VendorController::class,'vendor_add_package']);
@@ -87,6 +96,10 @@ Route::middleware('auth:vendor-api')->group(function () {
     
     Route::post('get_vendor_data', [VendorController::class,'get_vendor_data']);
     Route::post('edit_vendor_offer', [VendorController::class,'update_vendor_offer']);
-   
+	
+    Route::post('vendor_get_vendor_product', [VendorController::class,'get_vendor_product_vendor']);
+	
+	Route::post('update_status_product_offer', [VendorController::class,'update_status_product_offer']);
+	 Route::post('get_vendor_offers_vendor', [VendorController::class,'get_vendor_offers_vendor']);
     Route::post('logout_vendor', [AuthController::class,'logout']);
 });

@@ -17,7 +17,8 @@ use App\Models\Feed;
 use App\Models\Slider;
 use App\Models\Vendor_cover;
 use App\Models\Category;
-
+use App\Models\user_product_saves;
+use App\Models\user_fev_vendors;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
@@ -31,7 +32,183 @@ class UserController extends Controller
 
         return json_encode($response);
     }
+	
+	//add to fevroute
+	
+	public function user_add_favourite(Request $request)
+	{
+		 $validator = Validator::make($request->all(), [ 
+            'action_id' => 'required', 
+            'category_type' => 'required',
+			'action_type' => 'required'
+        ]);
 
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+		
+		$user_id=Auth::user()->id;
+		
+		if($request->category_type == 'product')
+		{
+			if($request->action_type=='save')
+        {
+            $feed=new user_product_saves;
+            $feed->user_id=Auth::user()->id;
+            $feed->product_id=$request->action_id;
+
+            if($feed->save())
+        {
+            $response['status']=true;
+            $response['msg']="Saved";
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Not Updated";
+        }
+        }
+        else if($request->action_type=='unsave'){
+
+            $res=user_product_saves::where('product_id',$request->action_id)->where('user_id',Auth::user()->id)->delete();
+
+            if($res)
+            {
+                $response['status']=true;
+                $response['msg']="UnSaved";
+            }
+            else{
+                $response['status']=false;
+                $response['msg']="Not Updated";
+            }
+        }
+        else{
+            $response['status']=false;
+                $response['msg']="Invalid type";
+        }
+		}
+		else if ($request->category_type == 'shop')
+		{
+			if($request->action_type=='save')
+        {
+            $feed=new user_fev_vendors;
+            $feed->user_id=Auth::user()->id;
+            $feed->vendor_id=$request->action_id;
+
+            if($feed->save())
+        {
+            $response['status']=true;
+            $response['msg']="Saved";
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Not Updated";
+        }
+        }
+        else if($request->action_type=='unsave'){
+
+            $res=user_fev_vendors::where('vendor_id',$request->action_id)->where('user_id',Auth::user()->id)->delete();
+
+            if($res)
+            {
+                $response['status']=true;
+                $response['msg']="UnSaved";
+            }
+            else{
+                $response['status']=false;
+                $response['msg']="Not Updated";
+            }
+        }
+        else{
+            $response['status']=false;
+                $response['msg']="Invalid type";
+        }
+		}
+		else{
+			$response['status']=false;
+            $response['msg']="Invalid request";
+		}
+		return json_encode($response);
+	}
+	
+	
+	//fetch fev data for the user-
+	public function user_get_favourite(Request $request)
+	{
+		 $validator = Validator::make($request->all(), [ 
+            'category_type' => 'required',
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+		
+		$user_id=Auth::user()->id;
+		
+		if($request->category_type == 'product')
+		{
+			$data=Vendor_Product::whereIn('id',function($q) use($user_id){
+				$q->from('user_product_saves')->selectRaw('product_id')->where('user_id',$user_id);
+			})->get();
+			
+			$response['status']=true;
+			$response['data']=$data;
+		}
+		else if ($request->category_type == 'shop')
+		{
+			$data=Vendor::whereIn('id',function($q) use($user_id){
+				$q->from('user_fev_vendors')->selectRaw('vendor_id')->where('user_id',$user_id);
+			})->get();
+			
+			$response['status']=true;
+			$response['data']=$data;
+		}
+		else{
+			$response['status']=false;
+            $response['msg']="Invalid request";
+		}
+		return json_encode($response);
+	}
+
+
+	//search api all 
+	public function search_all(Request $request)
+	{
+		 $validator = Validator::make($request->all(), [ 
+            'search_query' => 'required',
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+		
+		$q=$request->search_query;
+		$search_product=Vendor_Product::where('product_name','like', '%' . $q . '%')->get();
+		
+		$search_vendor=Vendor::where('shop_name','like', '%' . $q . '%')->get();
+		
+		$response['status']=true;
+		$response['product']=$search_product;
+		$response['vendor']=$search_vendor;
+		return json_encode($response);
+	}
+		
+	//get recent view shops
+		public function recent_view_shops(Request $request)
+		{
+			$user_id=Auth::user()->id;
+			
+			$data=Vendor::whereIn('id',function($q) use($user_id){
+				$q->from('vendor_shop_visit')->selectRaw('vendor_id')->where('user_id',$user_id)->orderBy('id', 'DESC');
+			})->limit(10)->get();
+			
+		$response['status']=true;
+		$response['data']=$data;
+		return json_encode($response);
+		}
+	
     //get user profile 
     public function get_user_profile(Request $request)
     {
@@ -166,8 +343,9 @@ class UserController extends Controller
 
         $data=DB::table('vendors')->select("id",'shop_name','profile_pic' )->selectRaw("{$haversine} AS distance")->whereIn('id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
-        })->having('distance','>','25')->orderBy('distance')->paginate($request->page_id);
+        })->having('distance','<','25')->orderBy('distance')->paginate($request->page_id);
         
+		
         if(count($data)>0)
         {
             $response['status']=true;

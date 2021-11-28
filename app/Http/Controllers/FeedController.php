@@ -17,7 +17,7 @@ use App\Models\Feed_Comment;
 use App\Models\Feed;
 use App\Models\Slider;
 use App\Models\Vendor_cover;
-use App\Models\Feed_contents;
+use App\Models\feed_content;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -30,10 +30,9 @@ class FeedController extends Controller
     public function add_feed(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
-            'title' => 'required', 
+            //'title' => 'required', 
             'description'=>'required',
-            // 'feed_file'=> 'required|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048'
-        
+        'user_type'=> 'required'
         ]);
 
 		if ($validator->fails())
@@ -42,20 +41,20 @@ class FeedController extends Controller
     	}
 
         $feed=new Feed;
-        $feed->feed_title=$request->title;
+        //$feed->feed_title=$request->title;
         $feed->feed_description=$request->description;
         $feed->feed_status='active';
         $feed->vendor_id=Auth::user()->id;
-
+			$feed->user_type=$request->user_type;
         if($feed->save())
         {
             $response['status']=true;
 
             if($files=$request->file('feed_file')){
                 $data=array();
-                foreach($files as $file){
+               foreach($files as $file){
                     
-                    $path="feeds/";
+                    $path="feeds";
                      //create unique name of file uploaded.
                     $name=time().'_'.$file->getClientOriginalName();
                     
@@ -63,7 +62,7 @@ class FeedController extends Controller
                     {
                         $data[] = ['feed_id'=>$feed->id, 'content_src'=> $path."/".$name,'content_type' => 'image'];
                     }
-                }
+               }
 
                 if(feed_content::insert($data))
                 {
@@ -141,9 +140,11 @@ class FeedController extends Controller
 
     public function user_feed_view(Request $request)
     {
+		//return $request;
         $validator = Validator::make($request->all(), [ 
             'page_id' => 'required', 
-            'vendor_id'=>'required'
+            'vendor_id'=>'required',
+			'action_type'=>'required'
         ]);
 
 		if ($validator->fails())
@@ -151,13 +152,24 @@ class FeedController extends Controller
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
 
-
-        if($request->vendor_id==0)
+		$type=$request->action_type;
+		
+        if($request->vendor_id==0 && $type=='all')
         {
             $response=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->orderByDesc('updated_at')->paginate($request->page_id);
         }
+		else if ($request->vendor_id==0 && $type!='all')
+		{
+			$response=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->where('user_type',$type)->orderByDesc('updated_at')->paginate($request->page_id);
+       
+		}
+		else if ($request->vendor_id!=0 && $type =='all')
+		{
+			    $response=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->where('user_type',$type)->orderByDesc('updated_at')->paginate($request->page_id);
+        
+		}
         else{
-            $response=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->where('vendor_id','=',$request->vendor_id)->orderByDesc('updated_at')->paginate($request->page_id);
+            $response=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')->rightjoin('feed_contents','feeds.id','feed_contents.feed_id')->addSelect(['feeds.feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->where('user_type',$type)->where('vendor_id',$request->vendor_id)->orderByDesc('updated_at')->select('*')->paginate($request->page_id);
         }
         
     
@@ -389,4 +401,17 @@ class FeedController extends Controller
         return json_encode($response);
     }
     
+	
+	//function for update feed view
+    public function get_saved_feeds(Request $request)
+    {
+        $user_id=Auth::user()->id;
+        $data=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->where('vendor_id','=',$request->vendor_id)->whereIn('feeds.id',function($q)use($user_id){
+				$q->from('feed_saves')->selectRaw('feed_id')->where('user_id', $user_id);
+		});
+        
+		$response['status']=true;
+		$response['data']=$data;
+        return json_encode($response);
+	}
 }

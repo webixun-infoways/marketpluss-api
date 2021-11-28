@@ -234,8 +234,20 @@ class VendorController extends Controller
         }
         }
         else{
+            foreach($request->category_id as $cat)
+        {
+              $data[] = ['vendor_id'=>$vendor_id, 'category_id'=> $cat];
+        }
+
+        if(vendor_main_categories::insert($data))
+        {
+            $response['status']=true;
+            $response['msg']="Category Successfully Updated!";
+        }
+        else{
             $response['status']=false;
-            $response['msg']="Invalid Request!";
+            $response['msg']="Category could not be updated!";
+        }
         }
         return json_encode($response);
       
@@ -752,7 +764,62 @@ class VendorController extends Controller
         echo json_encode($response,JSON_UNESCAPED_SLASHES); 
     }
 
+	
+	// update status product or offer
+	public function update_status_product_offer(Request $request)
+	{
+		$validator = Validator::make($request->all(), [ 
+            'action_id'=> 'required',
+            'type'=> 'required',
+            'status'=> 'required',
+        ]);
 
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+        
+		
+		if($request->type == 'product')
+		{
+			 $v_product= Vendor_Product::find($request->action_id);
+                
+                $v_product->status=$request->status;
+                
+                if($v_product->save())
+                {
+                    $response['status']=true;
+                    $response['msg']="Product updated!";
+                }
+                else
+                {
+                    $response['status']=false;
+                    $response['msg']="Product could not be updated!";
+                }
+		}
+		else if($request->type == 'offer')
+		{
+			$offer=Vendor_Offer::find($request->action_id);
+        
+			$offer->status =$request->status;
+			if($offer->save())
+			{
+				$response['status']=true;
+				$response['msg']="updated!";
+			}
+			else{
+				$response['status']=false;
+				$response['msg']="Not updated!";
+			}
+		}
+		else
+		{
+			$response['status']=false;
+            $response['msg']="Invalid Request";
+		}
+		echo json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
+	
     public function get_vendor_product(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
@@ -768,22 +835,22 @@ class VendorController extends Controller
         if($request->vendor_category_id != 0 && $request->product_type == 'product')
         {
              //fetch store details of vendor
-             $store_data=Vendor_Product::where('vendor_category_id',$request->vendor_category_id)->get();
+             $store_data=Vendor_Product::where('vendor_category_id',$request->vendor_category_id)->where('status','active')->get();
         }
         else if($request->vendor_category_id == 0 && $request->product_type == 'product')
         {    
             //fetch store details of vendor
-            $store_data=Vendor_Product::where('type',$request->product_type)->get();
+            $store_data=Vendor_Product::where('type',$request->product_type)->where('status','active')->get();
         }
         else if($request->vendor_category_id != 0 && $request->product_type == 'package')
         {    
             //fetch store details of vendor
-            $store_data=Vendor_Product::where('type',$request->product_type)->get();
+            $store_data=Vendor_Product::where('type',$request->product_type)->where('status','active')->get();
         }
         else
         {    
             //fetch store details of vendor
-            $store_data=Vendor_Product::where('type',$request->product_type)->get();
+            $store_data=Vendor_Product::where('type',$request->product_type)->where('status','active')->get();
         }
         
         
@@ -801,7 +868,60 @@ class VendorController extends Controller
  
          echo json_encode($response,JSON_UNESCAPED_SLASHES);
     }
+	
+	
+	 public function get_vendor_product_vendor(Request $request)
+    {
+		//return $request;
+        $validator = Validator::make($request->all(), [ 
+            'vendor_category_id' => 'required',
+            'product_type'=>'required'
+        ]);
 
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+		
+		 $vendor_id=Auth::user()->id;
+		 //return $vendor_id;
+        //return $request_category_id;
+        if($request->vendor_category_id != 0 && $request->product_type == 'product')
+        {
+             //fetch store details of vendor
+             $store_data=Vendor_Product::where('vendor_category_id',$request->vendor_category_id)->where('type',$request->product_type)->where('vendor_id',$vendor_id)->where('status','active')->get();
+        }
+        else if($request->vendor_category_id == 0 && $request->product_type == 'product')
+        {    
+            //fetch store details of vendor
+            $store_data=Vendor_Product::where('type',$request->product_type)->where('vendor_id',$vendor_id)->where('status','active')->get();
+        }
+        else if($request->vendor_category_id != 0 && $request->product_type == 'package')
+        {    
+            //fetch store details of vendor
+            $store_data=Vendor_Product::where('type',$request->product_type)->where('vendor_id',$vendor_id)->where('status','active')->get();
+        }
+        else
+        {    
+            //fetch store details of vendor
+            $store_data=Vendor_Product::where('type',$request->product_type->where('vendor_id',$vendor_id))->where('status','active')->get();
+        }
+        
+        
+         // echo $store_data;
+         // exit;
+         if($store_data!=null)
+         {
+             $response['status']=true;
+             $response['data']=$store_data;
+         }
+         else{
+             $response['status']=false;
+             $response['msg']="Invalid Category, Try Again.";
+         }
+ 
+         echo json_encode($response,JSON_UNESCAPED_SLASHES);
+    }
 
     public function get_vendor_offers(Request $request)
     {
@@ -876,6 +996,62 @@ class VendorController extends Controller
         echo json_encode($response,JSON_UNESCAPED_SLASHES);
     }
     
+	
+	
+	//fetch vendor_offers
+	 public function get_vendor_offers_vendor(Request $request)
+    {
+		//return $request;
+        $validator = Validator::make($request->all(), [ 
+           
+            'category_id' =>'required'
+        ]);
+
+
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+
+        $vendor_id=Auth::user()->id;
+
+       
+
+            if($request->category_id != 0)
+            {
+                $cate_id=$request->category_id;
+                $store_data=Vendor::join('vendor_products','vendor_products.vendor_id','vendors.id')->whereIn('vendor_products.id',function($q) use($vendor_id){
+                    $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
+                        $qe->from('vendor_offers')->selectRaw('id');
+                    });
+                    })->whereIn('vendors.id',[$vendor_id]);
+                
+
+            }
+            else{
+                $store_data=Vendor_Product::whereIn('id',function($q) use($vendor_id){
+           
+                    $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
+                    
+                        $qe->from('vendor_offers')->selectRaw('id');
+                    });
+                    })->get();
+            }
+        
+        
+        
+        if($store_data!=null)
+        {
+            $response['status']=true;
+            $response['data']=$store_data;
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Invalid Category, Try Again.";
+        }
+
+        echo json_encode($response,JSON_UNESCAPED_SLASHES);
+    }
     public function update_shop_visit(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
