@@ -45,10 +45,12 @@ Route::middleware('auth:api')->group(function () {
    //vendors related Routes
     Route::post('follow_vendor_user',[UserController::class,'follow_vendor_user']);
     Route::post('get_category_vendors', [UserController::class,'get_category_vendors']);
-    Route::post('get_vendor_details', [VendorController::class,'get_vendor_details']);
+	Route::post('sort_by', [UserController::class,'sort_by']);
+	Route::post('get_vendor_details', [VendorController::class,'get_vendor_details']);
     Route::post('get_vendor_product', [VendorController::class,'get_vendor_product']);
     Route::post('update_shop_visit_contact', [VendorController::class,'update_shop_visit']);
     Route::post('get_vendor_offers', [VendorController::class,'get_vendor_offers']);
+
 	
 	Route::post('recent_view_shops', [UserController::class,'recent_view_shops']);
 	
@@ -57,6 +59,7 @@ Route::middleware('auth:api')->group(function () {
     
 	//Feed related routes 
     Route::post('get_user_feeds', [FeedController::class,'user_feed_view']);
+	Route::post('delete_feed', [FeedController::class,'delete_feed']);
     Route::post('user_feed_like', [FeedController::class,'user_feed_like']);
     Route::post('user_feed_save', [FeedController::class,'user_feed_save']);
     Route::post('update_feed_view', [FeedController::class,'update_feed_view']);
@@ -85,6 +88,9 @@ Route::middleware('auth:vendor-api')->group(function () {
     Route::post('update_store_location', [VendorController::class,'update_store_location']);
     Route::post('update_category_vendor', [VendorController::class,'update_category_vendor']);
     
+	Route::post('get_cover_vendor', [VendorController::class,'get_cover_vendor']);
+	Route::post('delete_cover_vendor', [VendorController::class,'delete_cover_vendor']);
+	 
     Route::post('add_feed', [FeedController::class,'add_feed']);
     
 	Route::post('update_cover_vendor', [VendorController::class,'update_cover_vendor']);
@@ -102,4 +108,5 @@ Route::middleware('auth:vendor-api')->group(function () {
 	Route::post('update_status_product_offer', [VendorController::class,'update_status_product_offer']);
 	 Route::post('get_vendor_offers_vendor', [VendorController::class,'get_vendor_offers_vendor']);
     Route::post('logout_vendor', [AuthController::class,'logout']);
+
 });

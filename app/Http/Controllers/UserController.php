@@ -341,9 +341,14 @@ class UserController extends Controller
         + sin(radians(" . $request->latitude . ")) 
         * sin(radians(`shop_latitude`))))";
 
-        $data=DB::table('vendors')->select("id",'shop_name','profile_pic' )->selectRaw("{$haversine} AS distance")->whereIn('id', function ($query) use ($cat){
+        $data=DB::table('vendors')->join('vendor_offers','vendors.id','=','vendor_offers.vendor_id')
+		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendor_offers.offer')
+		->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
-        })->having('distance','<','25')->orderBy('distance')->paginate($request->page_id);
+        })
+		//->having('distance','<','25')
+		->orderBy('distance')
+		->paginate($request->page_id);
         
 		
         if(count($data)>0)
@@ -359,6 +364,52 @@ class UserController extends Controller
 
         echo json_encode($response,JSON_UNESCAPED_SLASHES); 
     }
+	
+	public function sort_by(Request $request)
+	{
+		$validator = Validator::make($request->all(), [ 
+            'page_id'=>'required',
+			'sort_by'=>'required',
+			'shop_latitude'=>'required',
+			'shop_longitude'=>'required'
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+		
+
+		$haversine = "(6371 * acos(cos(radians(" . $request->shop_latitude . ")) 
+		* cos(radians(`shop_latitude`)) 
+		* cos(radians(`shop_longitude`) 
+		- radians(" . $request->shop_longitude . ")) 
+		+ sin(radians(" . $request->shop_latitude . ")) 
+		* sin(radians(`shop_latitude`))))";
+		if($request->sort_by == 'high_to_low'){
+			$data=DB::table('vendors')->join('vendor_offers','vendors.id','=','vendor_offers.vendor_id')->select('vendors.id','vendors.shop_name','vendors.profile_pic','vendor_offers.offer')->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
+			$query->from('vendor_main_categories')->select('vendor_id');
+			})->orderBy('vendor_offers.offer','DESC')->paginate($request->page_id);
+			
+		}else if($request->sort_by == 'low_to_high'){
+			$data=DB::table('vendors')->join('vendor_offers','vendors.id','=','vendor_offers.vendor_id')->select('vendors.id','vendors.shop_name','vendors.profile_pic','vendor_offers.offer')->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
+			$query->from('vendor_main_categories')->select('vendor_id');
+			})->orderBy('vendor_offers.offer','ASC')->paginate($request->page_id);
+		}
+		
+
+        if(sizeof($data)>0)
+        {
+            $response['status']=true;
+                $response['data']=$data;
+            }
+            else
+            {
+                $response['status']=false;
+                $response['msg']="No Data Found";
+            }
+            return json_encode($response);
+	}
         
 
     public function follow_vendor_user(Request $request)

@@ -25,7 +25,32 @@ use Illuminate\Support\Facades\Crypt;
 
 class FeedController extends Controller
 {
-    
+    public function delete_feed(Request $request){
+		//return $request;
+		 $validator = Validator::make($request->all(), [ 
+            'feed_id' => 'required', 
+			'vendor_id' => 'required', 
+        ]);
+		//return Auth::user()->id;
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+        $feed=Feed::where('id',$request->feed_id)->where('vendor_id',Auth::user()->id)->delete();
+        if($feed)
+        {
+            $response['status']=true;
+            $response['msg']="Feed successfully deleted!";
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Feed could not be deleted!";
+        }
+
+        return json_encode($response);
+	}
     //function for feed likes
     public function add_feed(Request $request)
     {
@@ -169,8 +194,17 @@ class FeedController extends Controller
         
 		}
         else{
-            $response=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')->rightjoin('feed_contents','feeds.id','feed_contents.feed_id')->addSelect(['feeds.feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->where('user_type',$type)->where('vendor_id',$request->vendor_id)->orderByDesc('updated_at')->select('*')->paginate($request->page_id);
-        }
+            //$response=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')->rightjoin('feed_contents','feeds.id','feed_contents.feed_id')->addSelect(['feeds.feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->where('user_type',$type)->where('vendor_id',$request->vendor_id)->orderByDesc('updated_at')->select('*')->paginate($request->page_id);
+         
+			$response=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')
+				->join('feed_contents','feeds.id','feed_contents.feed_id')
+				->addSelect(['feeds.feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])
+				->where('feeds.user_type',$type)
+				->where('feeds.vendor_id',$request->vendor_id)
+				->orderByDesc('updated_at')
+				->select(['feeds.*'])
+				->paginate($request->page_id);
+		}
         
     
         echo json_encode($response,JSON_UNESCAPED_SLASHES); 

@@ -198,6 +198,16 @@ class VendorController extends Controller
  
          echo json_encode($response,JSON_UNESCAPED_SLASHES);
      }
+	 
+	 	//get cover vendorss 
+	public  function get_cover_vendor(Request $request)
+	{
+		$vendor_id=Auth::user()->id;
+		$response['covers']=Vendor_cover::where('vendor_id',$vendor_id)->get();
+		
+		$response['status']=true;
+		return json_encode($response);
+	}
     
 
 
@@ -723,6 +733,8 @@ class VendorController extends Controller
             }
             return json_encode($response);
     }
+	
+	
 
 
     public function get_vendor_details(Request $request)
@@ -738,16 +750,32 @@ class VendorController extends Controller
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
 
-        //fetch store details of vendor
-        $store_data=Vendor::find($request->vendor_id);
+       
+		
+		$haversine = "(6371 * acos(cos(radians(" . $request->latitude . ")) 
+        * cos(radians(`shop_latitude`)) 
+        * cos(radians(`shop_longitude`) 
+        - radians(" . $request->longitude . ")) 
+        + sin(radians(" . $request->latitude . ")) 
+        * sin(radians(`shop_latitude`))))";
+		//return $haversine;
+		//$dd = sprintf("%.2f", $haversine);
+		//return $dd;
+		
+		 //fetch store details of vendor
+        $store_data=Vendor::where('id','=',$request->vendor_id)->select(['vendors.*'])->selectRaw("{$haversine   } AS distance")->get();
+
+        //$distance=Vendor::get();
+		//return $distance;
         
         // echo $store_data;
         // exit;
         if($store_data!=null)
         {
+		    
             $response['status']=true;
             $response['data']=$store_data;
-
+            //$response['distance']=$distance;
             $response['covers']=Vendor_cover::where('vendor_id',$request->vendor_id)->get();
             
             $response['categories']=Vendor_category::where('vendor_id',$request->vendor_id)->get();
@@ -884,7 +912,7 @@ class VendorController extends Controller
     	}
 		
 		 $vendor_id=Auth::user()->id;
-		 //return $vendor_id;
+		//return $vendor_id;
         //return $request_category_id;
         if($request->vendor_category_id != 0 && $request->product_type == 'product')
         {
@@ -997,49 +1025,53 @@ class VendorController extends Controller
     }
     
 	
-	
-	//fetch vendor_offers
-	 public function get_vendor_offers_vendor(Request $request)
-    {
-		//return $request;
-        $validator = Validator::make($request->all(), [ 
-           
-            'category_id' =>'required'
-        ]);
 
+	
+	//delete cover pictures
+	//get cover vendorss 
+	public  function delete_cover_vendor(Request $request)
+	{
+		//return $request;
+		$validator = Validator::make($request->all(), [ 
+            'cover_id'=> 'required',
+        ]);
 
         if ($validator->fails())
         {
             return response(['errors'=>$validator->errors()->all()], 422);
         }
+		$vendor_id=Auth::user()->id;
+		
+		 $res=Vendor_cover::where('id',$request->cover_id)->where('vendor_id',Auth::user()->id)->delete();
 
-        $vendor_id=Auth::user()->id;
-
-       
-
-            if($request->category_id != 0)
+            if($res)
             {
-                $cate_id=$request->category_id;
-                $store_data=Vendor::join('vendor_products','vendor_products.vendor_id','vendors.id')->whereIn('vendor_products.id',function($q) use($vendor_id){
-                    $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
-                        $qe->from('vendor_offers')->selectRaw('id');
-                    });
-                    })->whereIn('vendors.id',[$vendor_id]);
-                
-
+                $response['status']=true;
+                $response['msg']="delete";
             }
             else{
-                $store_data=Vendor_Product::whereIn('id',function($q) use($vendor_id){
-           
-                    $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
-                    
-                        $qe->from('vendor_offers')->selectRaw('id');
-                    });
-                    })->get();
+                $response['status']=false;
+                $response['msg']="not permitted";
             }
+			
+				return json_encode($response);
+	}
+	
+	//fetch vendor_offers
+	 public function get_vendor_offers_vendor(Request $request)
+    {
+		//return $request;
+        $vendor_id=Auth::user()->id;
+		$store_data=Vendor::join('vendor_products','vendor_products.vendor_id','vendors.id')
+			->whereIn('vendor_products.id',function($q) use($vendor_id){
+				$q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id', function($qe) use($vendor_id){
+					$qe->from('vendor_offers')->selectRaw('id');
+				});
+			})->where('vendors.id',$vendor_id)->get();
+                
         
-        
-        
+		//return $store_data;
+		
         if($store_data!=null)
         {
             $response['status']=true;
