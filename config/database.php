@@ -63,6 +63,26 @@ return [
             ]) : [],
         ],
 
+        'SumeruErp' => [
+            'driver' => 'mysql',
+            'url' => env('http://103.76.231.95:3306'),
+            'host' => env('DB_HOST', '103.76.231.95'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', 'webix4me_Realesateerp'),
+            'username' => env('DB_USERNAME', 'webix4me_akshay'),
+            'password' => env('DB_PASSWORD', 'Webixun@123'),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => false,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DATABASE_URL'),
