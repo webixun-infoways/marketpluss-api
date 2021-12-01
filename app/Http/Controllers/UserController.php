@@ -348,7 +348,7 @@ class UserController extends Controller
         })
 		//->having('distance','<','25')
 		->orderBy('distance')
-		->paginate($request->page_id);
+		->paginate(10);
         
 		
         if(count($data)>0)
@@ -389,12 +389,12 @@ class UserController extends Controller
 		if($request->sort_by == 'high_to_low'){
 			$data=DB::table('vendors')->join('vendor_offers','vendors.id','=','vendor_offers.vendor_id')->select('vendors.id','vendors.shop_name','vendors.profile_pic','vendor_offers.offer')->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
 			$query->from('vendor_main_categories')->select('vendor_id');
-			})->orderBy('vendor_offers.offer','DESC')->paginate($request->page_id);
+			})->orderBy('vendor_offers.offer','DESC')->paginate(10);
 			
 		}else if($request->sort_by == 'low_to_high'){
 			$data=DB::table('vendors')->join('vendor_offers','vendors.id','=','vendor_offers.vendor_id')->select('vendors.id','vendors.shop_name','vendors.profile_pic','vendor_offers.offer')->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
 			$query->from('vendor_main_categories')->select('vendor_id');
-			})->orderBy('vendor_offers.offer','ASC')->paginate($request->page_id);
+			})->orderBy('vendor_offers.offer','ASC')->paginate(10);
 		}
 		
 

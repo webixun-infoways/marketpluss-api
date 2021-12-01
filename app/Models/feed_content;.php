@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class feed_content extends Model
 {
     use HasFactory;
-    protected $table="feed_contents";
+	protected $table = "feed_contents";
+    public $timestamps = false;
     
 }
