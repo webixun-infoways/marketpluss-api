@@ -6,16 +6,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\FeedController;
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
-*/
+use App\Http\Controllers\FaqController;
+
 
 
 //Open Routes for fetch the data globally 
@@ -30,6 +22,12 @@ Route::post('otp-verification', [AuthController::class,'otp_verification']);
 
 Route::get('unauthorized', [AuthController::class,'unauthorized']);
 Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
+//Route Faq Controller
+Route::post('add_faq', [FaqController::class,'add_faq']);
+Route::post('edit_faq', [FaqController::class,'edit_faq']);
+Route::post('delete_faq', [FaqController::class,'delete_faq']);
+Route::get('fetch_faq', [FaqController::class,'fetch_faq']);
+
 
 //condition  for protect the user route
 Route::middleware('auth:api')->group(function () {
