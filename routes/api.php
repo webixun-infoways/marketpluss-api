@@ -24,9 +24,9 @@ Route::post('otp-verification', [AuthController::class,'otp_verification']);
 Route::get('unauthorized', [AuthController::class,'unauthorized']);
 Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
 //Route Faq Controller
-Route::post('add_faq', [FaqController::class,'add_faq']);
-Route::post('edit_faq', [FaqController::class,'edit_faq']);
-Route::post('delete_faq', [FaqController::class,'delete_faq']);
+// Route::post('add_faq', [FaqController::class,'add_faq']);
+// Route::post('edit_faq', [FaqController::class,'edit_faq']);
+// Route::post('delete_faq', [FaqController::class,'delete_faq']);
 Route::get('fetch_faq', [FaqController::class,'fetch_faq']);
 
 
