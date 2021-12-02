@@ -38,7 +38,7 @@ class FeedController extends Controller
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
 
-        $feed=Feed::where('id',$request->feed_id)->where('vendor_id',Auth::user()->id)->delete();
+        $feed=Feed::where('id',$request->feed_id)->where('vendor_id',Auth::user()->id)->update(['feed_status'=>'delete']);
         if($feed)
         {
             $response['status']=true;
@@ -167,8 +167,7 @@ class FeedController extends Controller
     {
 		//return $request;
         $validator = Validator::make($request->all(), [ 
-            'page_id' => 'required', 
-            'vendor_id'=>'required',
+           'vendor_id'=>'required',
 			'action_type'=>'required'
         ]);
 
@@ -181,18 +180,47 @@ class FeedController extends Controller
 		
 		$vendor_id=$request->vendor_id;
 		 $user_id=Auth::user()->id;
+		 
+		 
         if($request->vendor_id==0 && $type=='all')
         {
-			$response=Feed::with('feed_content')->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])->addSelect(['shop_name' => Vendor::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])->orderByDesc('updated_at')->paginate(10);
+			$response=Feed::with('feed_content')
+			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
+			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
+			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])->where('feed_status','active')
+			->orderByDesc('updated_at')->paginate(10);
         }
 		else if ($request->vendor_id==0 && $type!='all')
 		{
-			$response=Feed::with('feed_content')->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])->addSelect(['shop_name' => Vendor::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])->where('user_type',$type)->orderByDesc('updated_at')->paginate(10);
+			$response=Feed::with('feed_content')
+			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
+			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')])
+			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
+			->where('user_type',$type)->where('feed_status','active')->orderByDesc('updated_at')->paginate(10);
 			
+		}
+		else if ($request->vendor_id!=0 && $type=='all')
+			{
+			$response=Feed::with('feed_content')
+			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
+			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
+			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
+			->where('feed_status','active')
+			->where('vendor_id',$vendor_id)->orderByDesc('updated_at')->paginate(10);
 		}
 		else
 		{
-			$response=Feed::with('feed_content')->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])->addSelect(['shop_name' => Vendor::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])->where('user_type',$type)->where('vendor_id',$vendor_id)->orderByDesc('updated_at')->paginate(10);
+			
+			$response=Feed::with('feed_content')
+			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
+			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
+			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
+			->where('user_type',$type)->where('feed_status','active')
+			->where('vendor_id',$vendor_id)->where('user_type',$type)->orderByDesc('updated_at')->paginate(10);
 		}
        
         echo json_encode($response,JSON_UNESCAPED_SLASHES); 
@@ -260,6 +288,41 @@ class FeedController extends Controller
 
         return json_encode($response);
     }
+	
+	public function reply_feed_comment(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'feed_id' => 'required', 
+            'reply'=>'required',
+			'comment_id'=>'required',
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+        $feed=new Feed_Comment;
+
+        $feed->feed_id=$request->feed_id;
+        $feed->vendor_id=Auth::user()->id;
+        $feed->reply=$request->reply;
+		$feed->parent_id=$request->comment_id;
+        $feed->status='active';
+        if($feed->save())
+        {
+            $response['status']=true;
+            $response['msg']="successful";
+        }
+        else{
+            $response['status']=false;
+                $response['msg']="Not Updated";
+        }
+
+        return json_encode($response);
+    }
+	
+	
 
 
     public function edit_feed_comment(Request $request)
@@ -316,6 +379,7 @@ class FeedController extends Controller
 
     public function get_feed_comment(Request $request)
     {
+		//return $request->feed_id;
         $validator = Validator::make($request->all(), [ 
             'feed_id' => 'required'
         ]);
@@ -324,9 +388,27 @@ class FeedController extends Controller
     	{
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
+		
+        $feed = Feed_comment::join('users','feed_comments.user_id','=','users.id')
+		->where('feed_id',$request->feed_id)
+		->where('feed_comments.status','active')
+		->get(['feed_comments.comment','users.name','users.profile_pic','feed_comments.updated_at','feed_comments.user_id','feed_comments.id']);
+		//return $feed;
+		
+	//run foraech 
+	
+	//fetch replyes for perticular commnet
+	 foreach($feed as $key=>$o)
+		{
+			$offer_id=$o->id;
+			$feed[$key]['reply']=Feed_Comment::join('vendors','feed_comments.vendor_id','=','vendors.id')
+			->whereIn('parent_id',function($q) use($offer_id){
+			    $q->from('feed_comments')->selectRaw('id')->whereIn('parent_id',[$offer_id]);
+			})
+			->get(['feed_comments.reply','vendors.name','vendors.profile_pic','feed_comments.updated_at','feed_comments.vendor_id','feed_comments.id']);
+		}
 
-        $feed=Feed_Comment::join('users','feed_comments.user_id','=','users.id')-> where('feed_id',$request->feed_id)->where('feed_comments.status','active')->select('feed_comments.comment','users.name','users.profile_pic','feed_comments.updated_at','feed_comments.user_id','feed_comments.id')->get() ;
-
+//return $feed;
         if(count($feed)>0)
         {
             $response['status']=true;
@@ -427,13 +509,16 @@ class FeedController extends Controller
 	//function for update feed view
     public function get_saved_feeds(Request $request)
     {
-        $user_id=Auth::user()->id;
-        $data=Feed::join('feed_contents','feeds.id','feed_contents.feed_id')->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->where('vendor_id','=',$request->vendor_id)->whereIn('feeds.id',function($q)use($user_id){
+       $user_id=Auth::user()->id;
+        $data=Feed::with('feed_content')
+		->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
+			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->whereIn('feeds.id',function($q)use($user_id){
 				$q->from('feed_saves')->selectRaw('feed_id')->where('user_id', $user_id);
-		});
+		})->where('feed_status','active')->get();
         
 		$response['status']=true;
 		$response['data']=$data;
-        return json_encode($response);
+        return json_encode($response,JSON_UNESCAPED_SLASHES);
 	}
 }

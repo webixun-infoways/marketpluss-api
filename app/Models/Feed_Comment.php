@@ -10,5 +10,7 @@ class Feed_Comment extends Model
     use HasFactory;
     protected $table="feed_comments";
 
-   
+   public function replies() {
+		return $this->hasMany(Feed_Comment::class, 'parent_id');
+   }
 }

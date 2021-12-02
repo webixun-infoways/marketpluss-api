@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use Mail;
 use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -22,8 +23,20 @@ use App\Models\user_fev_vendors;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
+
+use App\Jobs\Processmail;
+
 class UserController extends Controller
 {
+	//fetch front category for user & vendor
+    public function send_mail(Request $request)
+    {
+		Processmail::dispatch();
+      echo "done";
+    }
+	
+	
+	
     //fetch front category for user & vendor
     public function get_all_category(Request $request)
     {
@@ -321,8 +334,7 @@ class UserController extends Controller
     public function get_category_vendors(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
-            'page_id' => 'required', 
-            'category_id'=>'required',
+           'category_id'=>'required',
             'latitude'=>'required',
             'longitude'=>'required'
         ]);
@@ -365,11 +377,40 @@ class UserController extends Controller
         echo json_encode($response,JSON_UNESCAPED_SLASHES); 
     }
 	
+	
+	//get user profile 
+      public function fetch_user_profile_different(Request $request)
+      {
+		  
+		  $validator = Validator::make($request->all(), [ 
+           'user_id'=>'required',
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+		
+          $user_id=$request->user_id;
+          $user=User::find($user_id);
+  
+          if($user!=null)
+          {
+              $response['status']=true;
+              $response['data']=$user;
+          }
+          else{
+              $response['status']=false;
+              $response['msg']="Invalid token";
+          }
+  
+          return json_encode($response);
+      }
+	
 	public function sort_by(Request $request)
 	{
 		$validator = Validator::make($request->all(), [ 
-            'page_id'=>'required',
-			'sort_by'=>'required',
+            'sort_by'=>'required',
 			'shop_latitude'=>'required',
 			'shop_longitude'=>'required'
         ]);

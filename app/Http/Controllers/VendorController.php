@@ -112,7 +112,7 @@ class VendorController extends Controller
          {
              $pic=$request->file('update_profile_picture');
  
-             $path="shop_pic/";
+             $path="shop_pic";
  
              //create unique name of file uploaded.
              $name=time().'_'.$pic->getClientOriginalName();
@@ -449,7 +449,7 @@ class VendorController extends Controller
                 $v_product->status='active';
                 $v_product->vendor_id=$vendor_id;
                 $v_product->vendor_category_id=$request->vendor_category_id;
-                $v_product->product_img=$name;
+                $v_product->product_img=$path;
                 $v_product->type=$request->type;
                 if($v_product->save())
                 {
@@ -516,7 +516,7 @@ class VendorController extends Controller
                 $v_product->status='active';
                 $v_product->vendor_id=$vendor_id;
                 $v_product->vendor_category_id=$request->vendor_category_id;
-                $v_product->product_img=$name;
+                $v_product->product_img=$path;
                 $v_product->type=$request->type;
                 
                 if($v_product->save())
@@ -570,7 +570,8 @@ class VendorController extends Controller
             'offer'=> 'required',
             'start_date'=> 'required',
             'end_date'=>'required',
-            'vendor_id'=>'required'
+            'vendor_id'=>'required',
+			'offer_description'=>'required'
         ]);
 
         if ($validator->fails())
@@ -585,8 +586,9 @@ class VendorController extends Controller
         $offer->offer=$request->offer;
         $offer->start_from=$request->start_date;
         $offer->start_to =$request->end_date;
-        $offer->status =$request->offer_name;
+        $offer->status ='active';
         $offer->vendor_id= $vendor_id;
+		$offer->offer_description= $request->offer_description;
         if($offer->save())
         {
             $offer_id=$offer->id;
@@ -633,6 +635,7 @@ class VendorController extends Controller
             'end_date'=>'required',
             'vendor_id'=>'required',
             'offer_id'=>'required',
+			'offer_description'=>'required'
         ]);
 
         if ($validator->fails())
@@ -647,6 +650,7 @@ class VendorController extends Controller
         $offer->start_from=$request->start_date;
         $offer->start_to =$request->end_date;
         $offer->status =$request->offer_name;
+		$offer->offer_description= $request->offer_description;
         if($offer->save())
         {
             if(Vendor_Offer_Product::where('offer_id',$request->offer_id)->delete())
@@ -827,6 +831,22 @@ class VendorController extends Controller
                     $response['status']=false;
                     $response['msg']="Product could not be updated!";
                 }
+		}else if($request->type == 'package')
+		{
+			 $v_product= Vendor_Product::find($request->action_id);
+                
+                $v_product->status=$request->status;
+                
+                if($v_product->save())
+                {
+                    $response['status']=true;
+                    $response['msg']="Product updated!";
+                }
+                else
+                {
+                    $response['status']=false;
+                    $response['msg']="Product could not be updated!";
+                }
 		}
 		else if($request->type == 'offer')
 		{
@@ -915,27 +935,19 @@ class VendorController extends Controller
     	}
 		
 		 $vendor_id=Auth::user()->id;
+		 $type=$request->product_type;
 		//return $vendor_id;
         //return $request_category_id;
-        if($request->vendor_category_id != 0 && $request->product_type == 'product')
+        if($request->vendor_category_id != 0 )
         {
              //fetch store details of vendor
-             $store_data=Vendor_Product::where('vendor_category_id',$request->vendor_category_id)->where('type',$request->product_type)->where('vendor_id',$vendor_id)->where('status','active')->get();
+             $store_data=Vendor_Product::where('vendor_category_id',$request->vendor_category_id)->where('type',$request->product_type)->where('vendor_id',$vendor_id)->where('status','!=','delete')->get();
         }
-        else if($request->vendor_category_id == 0 && $request->product_type == 'product')
-        {    
-            //fetch store details of vendor
-            $store_data=Vendor_Product::where('type',$request->product_type)->where('vendor_id',$vendor_id)->where('status','active')->get();
-        }
-        else if($request->vendor_category_id != 0 && $request->product_type == 'package')
-        {    
-            //fetch store details of vendor
-            $store_data=Vendor_Product::where('type',$request->product_type)->where('vendor_id',$vendor_id)->where('status','active')->get();
-        }
+       
         else
         {    
             //fetch store details of vendor
-            $store_data=Vendor_Product::where('type',$request->product_type->where('vendor_id',$vendor_id))->where('status','active')->get();
+            $store_data=Vendor_Product::where('type',$request->product_type)->where('vendor_id',$vendor_id)->where('status','!=','delete')->get();
         }
         
         
@@ -960,8 +972,7 @@ class VendorController extends Controller
             'vendor_id'=>'required',
             'latitude'=>'required',
             'longitude' => 'required',
-            'category_id' =>'required',
-			'page_id'=>'required'
+            'category_id' =>'required'
         ]);
 		
 		
@@ -979,10 +990,10 @@ class VendorController extends Controller
         + sin(radians(" . $request->latitude . ")) 
         * sin(radians(`shop_latitude`))))";
 	
-		
+		//confitions for check all the users
         if($vendor_id != 0)
         {
-			$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->selectRaw("{$haversine} AS distance")->where('vendor_offers.vendor_id',$vendor_id)->having('distance','<','25')->orderBy('distance')->paginate(5);
+			$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->selectRaw("{$haversine} AS distance")->where('vendor_offers.vendor_id',$vendor_id)->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(5);
 		
         }
         else{
@@ -991,13 +1002,13 @@ class VendorController extends Controller
             {
                 $cate_id=$request->category_id;
 				
-				$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->selectRaw("{$haversine} AS distance")->where('vendor_offers.vendor_id',$vendor_id)->whereIn('vendors.id',function($q) use($cate_id){
+				$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->selectRaw("{$haversine} AS distance")->where('vendor_offers.vendor_id',$vendor_id)->whereIn('vendors.id',function($q) use($cate_id){
                         $q->from('vendor_main_categories')->selectRaw('vendor_id')->where('category_id',$cate_id);
-                    })->having('distance','<','25')->orderBy('distance')->paginate(5);
+                    })->having('distance','<','25')->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(5);
             }
             else{
 				
-                $offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_name','vendor_offers.offer'])->selectRaw("{$haversine} AS distance")->having('distance','<','25')->orderBy('distance')->paginate(5);
+                $offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->selectRaw("{$haversine} AS distance")->having('distance','<','25')->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(5);
 		
             }
         }
@@ -1064,7 +1075,7 @@ class VendorController extends Controller
     {
 		//return $request;
        $vendor_id=Auth::user()->id;
-		$offer_data=Vendor_Offer::where('vendor_id',$vendor_id)->get();
+		$offer_data=Vendor_Offer::where('vendor_id',$vendor_id)->where('status','!=','delete')->get();
 		
 		foreach($offer_data as $key=>$o)
 		{
