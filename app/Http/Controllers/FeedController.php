@@ -257,7 +257,39 @@ class FeedController extends Controller
 
         return json_encode($response);
     }
+	
+	
+	//get single feed for user
+	 
+    public function get_single_feed(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'feed_id' => 'required',
+        ]);
 
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+		$feed_id=$request->feed_id;
+		$user_id=Auth::user()->id;
+        $feed=Feed::with('feed_content')
+			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
+			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
+			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])->where('feed_status','active')
+			->where('id',$feed_id)->orderByDesc('updated_at')->get();
+	
+      
+            $response['status']=true;
+            $response['data']=$feed;
+    
+
+        return json_encode($response);
+    }
+	
+	//function for follow the vendor  
     public function add_feed_comment(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
@@ -390,7 +422,7 @@ class FeedController extends Controller
     	}
 		
         $feed = Feed_comment::join('users','feed_comments.user_id','=','users.id')
-		->where('feed_id',$request->feed_id)
+		->where('feed_id',$request->feed_id)->where('parent_id',0)
 		->where('feed_comments.status','active')
 		->get(['feed_comments.comment','users.name','users.profile_pic','feed_comments.updated_at','feed_comments.user_id','feed_comments.id']);
 		//return $feed;
@@ -400,10 +432,10 @@ class FeedController extends Controller
 	//fetch replyes for perticular commnet
 	 foreach($feed as $key=>$o)
 		{
-			$offer_id=$o->id;
+			 $offer_id=$o->id;
 			$feed[$key]['reply']=Feed_Comment::join('vendors','feed_comments.vendor_id','=','vendors.id')
-			->whereIn('parent_id',function($q) use($offer_id){
-			    $q->from('feed_comments')->selectRaw('id')->whereIn('parent_id',[$offer_id]);
+			->whereIn('feed_comments.id',function($q) use($offer_id){
+			    $q->from('feed_comments')->select('id')->where('parent_id',$offer_id);
 			})
 			->get(['feed_comments.reply','vendors.name','vendors.profile_pic','feed_comments.updated_at','feed_comments.vendor_id','feed_comments.id']);
 		}
@@ -418,7 +450,7 @@ class FeedController extends Controller
             $response['status']=false;
                 $response['msg']="no comment found.";
         }
-        return json_encode($response);
+        return json_encode($response,JSON_UNESCAPED_SLASHES);
     }
 
     //method for handling the feed save user 

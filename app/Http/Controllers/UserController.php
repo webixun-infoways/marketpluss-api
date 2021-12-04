@@ -18,6 +18,7 @@ use App\Models\Feed;
 use App\Models\Slider;
 use App\Models\Vendor_cover;
 use App\Models\Category;
+use App\Models\Notification;
 use App\Models\user_product_saves;
 use App\Models\user_fev_vendors;
 use Illuminate\Support\Facades\Auth;
@@ -35,7 +36,16 @@ class UserController extends Controller
       echo "done";
     }
 	
-	
+	public function fetch_user_notification(Request $request)
+	{
+		$user_id=Auth::user()->id;
+		$notifications =Notifications::join('users','users.id','notifications.receiver_id')->where('receiver_type','user')->orderBy('id', 'DESC')->paginate(10);
+		
+		$response['status']=true;
+		$response['data']=$notifications;
+		
+		return json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
 	
     //fetch front category for user & vendor
     public function get_all_category(Request $request)

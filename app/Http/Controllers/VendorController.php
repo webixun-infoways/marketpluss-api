@@ -13,6 +13,7 @@ use App\Models\vendor_shop_visit;
 use App\Models\Vendors_Subsciber;
 use App\Models\Vendor_cover;
 use App\Models\Vendor_Product;
+use App\Models\Category;
 
 use App\Models\Feed_Save;
 use App\Models\Feed;
@@ -39,6 +40,20 @@ class VendorController extends Controller
         $res['data']=$response;
         return json_encode($res);
     }
+	
+	
+	//get vendor notifications
+	
+	public function fetch_vendor_notification(Request $request)
+	{
+		$user_id=Auth::user()->id;
+		$notifications =Notifications::join('vendor','vendor.id','notifications.receiver_id')->where('receiver_type','vendor')->orderBy('id', 'DESC')->paginate(10);
+		
+		$response['status']=true;
+		$response['data']=$notifications;
+		
+		return json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
 
       //get user profile 
       public function get_vendor_profile(Request $request)
@@ -474,7 +489,22 @@ class VendorController extends Controller
          }
          return json_encode($response);
     }
-
+	
+	//get_selected_category_vendor
+	
+	public function get_selected_category_vendor(Request $request)
+	{
+		$vendor_id=Auth::user()->id;
+		
+		$cat=Category::where('id',function($q)use($vendor_id){
+			$q->from('vendor_main_categories')->select('category_id')->where('vendor_id',$vendor_id);
+		})->get();
+		
+		$response['status']=true;
+		$response['data']=$cat;
+		return json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
+	
     //update vendor servicess
 
     public function vendor_update_product(Request $request)
@@ -500,7 +530,7 @@ class VendorController extends Controller
          if($request->hasFile('product_img'))
          {
              $pic=$request->file('product_img');
-             $path="products/";
+             $path="products";
  
              //create unique name of file uploaded.
              $name=time().'_'.$pic->getClientOriginalName();
@@ -993,22 +1023,25 @@ class VendorController extends Controller
 		//confitions for check all the users
         if($vendor_id != 0)
         {
-			$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->selectRaw("{$haversine} AS distance")->where('vendor_offers.vendor_id',$vendor_id)->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(5);
+			$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->selectRaw("{$haversine} AS distance")->where('vendor_offers.vendor_id',$vendor_id)->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(10);
 		
         }
         else{
 
             if($request->category_id != 0)
             {
-                $cate_id=$request->category_id;
 				
-				$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->selectRaw("{$haversine} AS distance")->where('vendor_offers.vendor_id',$vendor_id)->whereIn('vendors.id',function($q) use($cate_id){
+               $cate_id=$request->category_id;
+				
+				$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')
+				->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
+				->selectRaw("{$haversine} AS distance")->whereIn('vendors.id',function($q) use($cate_id){
                         $q->from('vendor_main_categories')->selectRaw('vendor_id')->where('category_id',$cate_id);
-                    })->having('distance','<','25')->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(5);
+                    })->having('distance','<','25')->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(10);
             }
             else{
 				
-                $offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->selectRaw("{$haversine} AS distance")->having('distance','<','25')->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(5);
+                $offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->selectRaw("{$haversine} AS distance")->having('distance','<','25')->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(10);
 		
             }
         }
@@ -1016,7 +1049,7 @@ class VendorController extends Controller
         
        foreach($offer_data as $key=>$o)
 		{
-			$offer_id=$o->id;
+			$offer_id=$o->offer_id;
 			$offer_data[$key]['products']=Vendor_Product::whereIn('id',function($q) use($offer_id){
            
                     $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id',[$offer_id]);
@@ -1038,7 +1071,48 @@ class VendorController extends Controller
     }
     
 	
+	
+	 public function get_vendor_offers_single(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'offer_id'=>'required',
+        ]);
+		
+		
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
 
+        $offer_id=$request->offer_id;
+
+       
+		//confitions for check all the users
+
+		$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->where('vendor_offers.id',$offer_id)->where('vendor_offers.status','!=','delete')->get();
+		foreach($offer_data as $key=>$o)
+		{
+			$offer_id=$o->offer_id;
+			$offer_data[$key]['products']=Vendor_Product::whereIn('id',function($q) use($offer_id){
+           
+                    $q->from('vendor_offer_products')->select('product_id')->where('offer_id',$offer_id);
+                    })->get();
+		}
+		//return $store_data;
+		
+        if($offer_data!=null)
+        {
+            $response['status']=true;
+            $response['data']=$offer_data;
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Invalid Category, Try Again.";
+        }
+
+        echo json_encode($response,JSON_UNESCAPED_SLASHES);
+    }
+	
 	
 	//delete cover pictures
 	//get cover vendorss 
@@ -1074,19 +1148,19 @@ class VendorController extends Controller
 	 public function get_vendor_offers_vendor(Request $request)
     {
 		//return $request;
-       $vendor_id=Auth::user()->id;
+        $vendor_id=Auth::user()->id;
+		//return $vendor_id;
 		$offer_data=Vendor_Offer::where('vendor_id',$vendor_id)->where('status','!=','delete')->get();
 		
 		foreach($offer_data as $key=>$o)
 		{
 			$offer_id=$o->id;
 			$offer_data[$key]['products']=Vendor_Product::whereIn('id',function($q) use($offer_id){
-           
-                    $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id',[$offer_id]);
-                    })->get();
+				 $q->from('vendor_offer_products')->selectRaw('product_id')->whereIn('offer_id',[$offer_id]);
+			  })->get();
 		}
-		//return $store_data;
 		
+		//return count($offer_data);
         if($offer_data!=null)
         {
             $response['status']=true;
@@ -1099,6 +1173,10 @@ class VendorController extends Controller
 
         echo json_encode($response,JSON_UNESCAPED_SLASHES);
     }
+	
+	
+	
+	
     public function update_shop_visit(Request $request)
     {
         $validator = Validator::make($request->all(), [ 

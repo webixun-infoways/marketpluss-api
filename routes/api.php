@@ -23,6 +23,8 @@ Route::post('otp-verification', [AuthController::class,'otp_verification']);
 
 Route::get('unauthorized', [AuthController::class,'unauthorized']);
 Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
+
+Route::post('get_single_feed', [FeedController::class,'get_single_feed']);
 //Route Faq Controller
 // Route::post('add_faq', [FaqController::class,'add_faq']);
 // Route::post('edit_faq', [FaqController::class,'edit_faq']);
@@ -32,7 +34,9 @@ Route::get('fetch_faq', [FaqController::class,'fetch_faq']);
 
 //condition  for protect the user route
 Route::middleware('auth:api')->group(function () {
-
+	
+	 Route::post('fetch_user_notification', [UserController::class,'fetch_user_notification']);
+	   
     // User Profile related routes
     Route::post('update_profile', [UserController::class,'update_profile']);
     Route::post('update_profile_picture', [UserController::class,'update_profile_picture']);
@@ -52,7 +56,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('get_vendor_product', [VendorController::class,'get_vendor_product']);
     Route::post('update_shop_visit_contact', [VendorController::class,'update_shop_visit']);
     Route::post('get_vendor_offers', [VendorController::class,'get_vendor_offers']);
-
+ Route::post('get_vendor_offers_single', [VendorController::class,'get_vendor_offers_single']);
 	
 	Route::post('recent_view_shops', [UserController::class,'recent_view_shops']);
 	
@@ -72,7 +76,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('edit_feed_comment', [FeedController::class,'edit_feed_comment']);
     Route::post('delete_feed_comment', [FeedController::class,'delete_feed_comment']);
     Route::post('get_saved_feeds', [FeedController::class,'get_saved_feeds']);
-   
+   Route::post('get_single_feed_user',[FeedController::class,'get_single_feed']);
 
     //for logout 
     Route::post('logout_user', [AuthController::class,'logout']);
@@ -82,6 +86,9 @@ Route::middleware('auth:api')->group(function () {
 
 //condition  for protect the vendor route
 Route::middleware('auth:vendor-api')->group(function () {
+	
+	Route::post('fetch_vendor_notification', [VendorController::class,'fetch_vendor_notification']);
+	
     // our routes to be protected will go in here
     Route::post('get_vendor_profile', [VendorController::class,'get_vendor_profile']);
     Route::post('update_profile_vendor', [VendorController::class,'update_profile_vendor']);
@@ -90,7 +97,8 @@ Route::middleware('auth:vendor-api')->group(function () {
     Route::post('create_category_vendor', [VendorController::class,'create_category_vendor']);
     Route::post('update_store_location', [VendorController::class,'update_store_location']);
     Route::post('update_category_vendor', [VendorController::class,'update_category_vendor']);
-    
+    Route::post('get_selected_category_vendor', [VendorController::class,'get_selected_category_vendor']);
+	
 	Route::post('get_cover_vendor', [VendorController::class,'get_cover_vendor']);
 	Route::post('delete_cover_vendor', [VendorController::class,'delete_cover_vendor']);
 	 
@@ -110,6 +118,9 @@ Route::middleware('auth:vendor-api')->group(function () {
 	Route::post('delete_feed_comment_vendor', [FeedController::class,'delete_feed_comment']);
 	Route::post('update_status_product_offer', [VendorController::class,'update_status_product_offer']);
 	 Route::post('get_vendor_offers_vendor', [VendorController::class,'get_vendor_offers_vendor']);
+	 
+	  Route::post('get_single_feed_vendor',[FeedController::class,'get_single_feed']);
+	  
     Route::post('logout_vendor', [AuthController::class,'logout']);
 
 });
