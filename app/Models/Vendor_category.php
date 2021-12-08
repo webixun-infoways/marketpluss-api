@@ -9,4 +9,10 @@ class Vendor_category extends Model
 {
     use HasFactory;
     protected $table="vendor_categories";
+	
+	public function products()
+    {
+        return $this->hasMany(Vendor_Product::class)->whereIn('status',['active','inactive']);
+		
+    }
 }

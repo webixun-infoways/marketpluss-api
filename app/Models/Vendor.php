@@ -44,4 +44,18 @@ class Vendor extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+	
+	public function covers()
+    {
+        return $this->hasMany(Vendor_cover::class);
+    }
+	
+	public function categories()
+    {
+        return $this->hasMany(Vendor_category::class);
+    }
+	
+	public function offers(){
+		return $this->hasOne(Vendor_Offer::class)->where('status','active')->latest();
+	}
 }

@@ -15,6 +15,7 @@ use App\Models\Vendors_Subsciber;
 use App\Models\Vendor_category;
 use App\Models\Feed_Comment;
 use App\Models\Feed;
+use App\Models\Vendor_Offer;
 use App\Models\Slider;
 use App\Models\Vendor_cover;
 use App\Models\Category;
@@ -26,20 +27,22 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 
 use App\Jobs\Processmail;
+use App\Helpers\AppHelper;
 
 class UserController extends Controller
 {
 	//fetch front category for user & vendor
     public function send_mail(Request $request)
     {
-		Processmail::dispatch();
-      echo "done";
+		$contact="8006435315";
+		$msg="Use 564434. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
+		return	AppHelper::send_sms2($contact,$msg);
     }
 	
 	public function fetch_user_notification(Request $request)
 	{
 		$user_id=Auth::user()->id;
-		$notifications =Notifications::join('users','users.id','notifications.receiver_id')->where('receiver_type','user')->orderBy('id', 'DESC')->paginate(10);
+		$notifications =Notification::join('users','users.id','notifications.received_id')->where('receiver_type','user')->orderBy('notifications.id', 'DESC')->paginate(10);
 		
 		$response['status']=true;
 		$response['data']=$notifications;
@@ -257,7 +260,6 @@ class UserController extends Controller
     {
         $validator = Validator::make($request->all(), [ 
             'name' => 'required', 
-            'email' => 'email'
         ]);
 
 		if ($validator->fails())
@@ -363,15 +365,17 @@ class UserController extends Controller
         + sin(radians(" . $request->latitude . ")) 
         * sin(radians(`shop_latitude`))))";
 
-        $data=DB::table('vendors')->join('vendor_offers','vendors.id','=','vendor_offers.vendor_id')
-		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendor_offers.offer')
+        $data=Vendor::with('offers')
+		->select("vendors.id",'vendors.shop_name','vendors.profile_pic')
 		->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
         })
-		//->having('distance','<','25')
+		->having('distance','<','25')
 		->orderBy('distance')
 		->paginate(10);
-        
+		
+		
+        return $data;
 		
         if(count($data)>0)
         {
@@ -402,7 +406,8 @@ class UserController extends Controller
     	}
 		
           $user_id=$request->user_id;
-          $user=User::find($user_id);
+          $user=User::addSelect(['vendor_follow' =>Vendors_Subsciber::selectRaw('count(*)')->where('user_id',$user_id)])
+		  ->addSelect(['feeds_count' =>Feed::selectRaw('count(*)')->where('user_type', 'user')->where('vendor_id',$user_id)])->where('id',$user_id)->get();
   
           if($user!=null)
           {

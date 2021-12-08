@@ -14,7 +14,7 @@ use App\Models\Vendors_Subsciber;
 use App\Models\Vendor_cover;
 use App\Models\Vendor_Product;
 use App\Models\Category;
-
+use App\Models\Notification;
 use App\Models\Feed_Save;
 use App\Models\Feed;
 use Illuminate\Support\Facades\Auth;
@@ -47,7 +47,7 @@ class VendorController extends Controller
 	public function fetch_vendor_notification(Request $request)
 	{
 		$user_id=Auth::user()->id;
-		$notifications =Notifications::join('vendor','vendor.id','notifications.receiver_id')->where('receiver_type','vendor')->orderBy('id', 'DESC')->paginate(10);
+		$notifications =Notification::join('vendors','vendors.id','notifications.received_id')->where('receiver_type','vendor')->orderBy('notifications.id', 'DESC')->paginate(10);
 		
 		$response['status']=true;
 		$response['data']=$notifications;
@@ -496,7 +496,7 @@ class VendorController extends Controller
 	{
 		$vendor_id=Auth::user()->id;
 		
-		$cat=Category::where('id',function($q)use($vendor_id){
+		$cat=Category::whereIn('id',function($q)use($vendor_id){
 			$q->from('vendor_main_categories')->select('category_id')->where('vendor_id',$vendor_id);
 		})->get();
 		
@@ -746,6 +746,7 @@ class VendorController extends Controller
 
     public function get_category_vendor(Request $request)
     {
+		//return "Hello";
         $validator = Validator::make($request->all(), [ 
             'vendor_id'=>'required'
         ]);
@@ -772,8 +773,6 @@ class VendorController extends Controller
     }
 	
 	
-
-
     public function get_vendor_details(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
@@ -788,7 +787,7 @@ class VendorController extends Controller
     	}
 
        
-		
+		$user_id=Auth::user()->id;
 		$haversine = "(6371 * acos(cos(radians(" . $request->latitude . ")) 
         * cos(radians(`shop_latitude`)) 
         * cos(radians(`shop_longitude`) 
@@ -800,7 +799,8 @@ class VendorController extends Controller
 		//return $dd;
 		
 		 //fetch store details of vendor
-        $store_data=Vendor::where('id','=',$request->vendor_id)->select(['vendors.*'])->selectRaw("{$haversine   } AS distance")->get();
+        $store_data=Vendor::with('covers')->where('id','=',$request->vendor_id)->
+		addSelect(['vendor_follow' =>Vendors_Subsciber::select('vendor_id')->whereColumn('vendor_id', 'vendors.id')->where('user_id',$user_id)])->selectRaw("{$haversine} AS distance")->get();
 
         //$distance=Vendor::get();
 		//return $distance;
@@ -809,16 +809,10 @@ class VendorController extends Controller
         // exit;
         if($store_data!=null)
         {
-		    
             $response['status']=true;
             $response['data']=$store_data;
-            //$response['distance']=$distance;
-            $response['covers']=Vendor_cover::where('vendor_id',$request->vendor_id)->get();
-            
-            $response['categories']=Vendor_category::where('vendor_id',$request->vendor_id)->get();
-
-            $response['products']=Vendor_Product::where('vendor_id',$request->vendor_id)->get();
-
+            //$response['distance']=$distance; 
+			$response['categories']=Vendor_category::with('products')->where('vendor_id',$request->vendor_id)->get();
             $response['data']['followers']=Vendors_Subsciber::where('vendor_id',$request->vendor_id)->count();
         }
         else{

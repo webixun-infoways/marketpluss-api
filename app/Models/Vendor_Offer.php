@@ -9,4 +9,7 @@ class Vendor_Offer extends Model
 {
     use HasFactory;
     protected $table="vendor_offers";
+	
+	
 }
+

@@ -10,7 +10,8 @@ use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
-
+use App\Helpers\AppHelper;
+use App\Jobs\ProcessSms;
 class AuthController extends Controller
 {
 	//method for contact verification 
@@ -21,16 +22,24 @@ class AuthController extends Controller
 			'verification_type' => 'required'
         ]);
 		
-		if ($validator->fails())
+		if($validator->fails())
     	{
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
 		
 		$contact=$request->contact;
 		
-//		$otp=rand(100000,999999);
-		$otp=Hash::make("1234");
+		//$otp=rand(1000,9999);
+		$otp=1234;
+		$msg="Use $otp. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
 		
+		$data['contact']=$contact;
+		$data['msg']=$msg;
+		
+		//jobs for end the sms 
+		ProcessSms::dispatch($data);
+	
+		$otp=Hash::make($otp);
 		if($request->verification_type=='user')
 		{
 			$data = User::where('contact', $contact)->get();

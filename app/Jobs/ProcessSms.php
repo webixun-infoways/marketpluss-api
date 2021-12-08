@@ -8,19 +8,19 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-
+use App\Helpers\AppHelper;
 class ProcessSms implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
+	protected $data;
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct($data)
     {
-        //
+        $this->data = $data;
     }
 
     /**
@@ -30,6 +30,8 @@ class ProcessSms implements ShouldQueue
      */
     public function handle()
     {
-        //
+		$contact=$this->data['contact'];
+		$msg=$this->data['msg'];
+        AppHelper::send_sms2($contact,$msg);
     }
 }
