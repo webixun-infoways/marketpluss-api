@@ -53,10 +53,20 @@ class UserController extends Controller
     //fetch front category for user & vendor
     public function get_all_category(Request $request)
     {
-        $category=Category::all();
+        $validator = Validator::make($request->all(), [ 
+            'category_id' => 'required'
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+        $category=Category::where('parent_id',$request->category_id)->get();
+       
         $response['data']=$category;
 
-        return json_encode($response);
+        return json_encode($response,JSON_UNESCAPED_SLASHES);
     }
 	
 	//add to fevroute
