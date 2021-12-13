@@ -17,8 +17,11 @@ class Feed extends Model
 	
 	 public function feed_like()
     {
-        return $this->hasOne(feed_like::class);
+        return $this->hasMany(feed_like::class);
     }
-	
+	public function feed_comment()
+    {
+        return $this->hasMany(feed_comment::class);
+    }
 	
 }

@@ -19,14 +19,15 @@ use App\Models\Vendor_Offer;
 use App\Models\Slider;
 use App\Models\Vendor_cover;
 use App\Models\Category;
-use App\Models\Notification;
 use App\Models\user_product_saves;
 use App\Models\user_fev_vendors;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
-
+use App\Models\Notification;
 use App\Jobs\Processmail;
+use App\Jobs\ProcessPush;
+
 use App\Helpers\AppHelper;
 
 class UserController extends Controller
@@ -36,7 +37,14 @@ class UserController extends Controller
     {
 		$contact="8006435315";
 		$msg="Use 564434. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
-		return	AppHelper::send_sms2($contact,$msg);
+		
+		$heading="this is test3";
+		$url="https://webixun.com";
+		
+		$user_type="Users";
+		$users=1;
+		return AppHelper::send_Push($heading,$url,$user_type,$users);
+		//return	ProcessPush::dispatch($heading,$url);
     }
 	
 	public function fetch_user_notification(Request $request)
@@ -53,16 +61,15 @@ class UserController extends Controller
     //fetch front category for user & vendor
     public function get_all_category(Request $request)
     {
-        $validator = Validator::make($request->all(), [ 
-            'category_id' => 'required'
-        ]);
-
-		if ($validator->fails())
-    	{
-        	return response(['errors'=>$validator->errors()->all()], 422);
-    	}
-
-        $category=Category::where('parent_id',$request->category_id)->get();
+       
+		
+		if(isset($request->category_id))
+		{
+			 $category= $category=Category::where('parent_id',$request->category_id)->where('status','Active')->get();
+		}else{
+			 $category=Category::where('status','Active')->get();
+		}
+       
        
         $response['data']=$category;
 
@@ -213,21 +220,29 @@ class UserController extends Controller
 	{
 		 $validator = Validator::make($request->all(), [ 
             'search_query' => 'required',
+			'search_type' =>'required'
         ]);
 
 		if ($validator->fails())
     	{
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
-		
 		$q=$request->search_query;
-		$search_product=Vendor_Product::where('product_name','like', '%' . $q . '%')->get();
-		
-		$search_vendor=Vendor::where('shop_name','like', '%' . $q . '%')->get();
+		if($request->search_type == 'vendor')
+		{
+			$search_vendor=Vendor::where('shop_name','like', '%' . $q . '%')->limit(5)->get();
+			$response['vendor']=$search_vendor;
+		}
+		else{
+			
+			$search_product=Vendor_Product::where('product_name','like', '%' . $q . '%')->limit(5)->get();
+			$search_vendor=Vendor::where('shop_name','like', '%' . $q . '%')->limit(5)->get();
+			$response['product']=$search_product;
+			$response['vendor']=$search_vendor;
+		}
 		
 		$response['status']=true;
-		$response['product']=$search_product;
-		$response['vendor']=$search_vendor;
+		
 		return json_encode($response);
 	}
 		
@@ -376,7 +391,7 @@ class UserController extends Controller
         * sin(radians(`shop_latitude`))))";
 
         $data=Vendor::with('offers')
-		->select("vendors.id",'vendors.shop_name','vendors.profile_pic')
+		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address')
 		->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
         })
@@ -385,7 +400,7 @@ class UserController extends Controller
 		->paginate(10);
 		
 		
-        return $data;
+        //return $data;
 		
         if(count($data)>0)
         {
@@ -453,14 +468,29 @@ class UserController extends Controller
 		+ sin(radians(" . $request->shop_latitude . ")) 
 		* sin(radians(`shop_latitude`))))";
 		if($request->sort_by == 'high_to_low'){
-			$data=DB::table('vendors')->join('vendor_offers','vendors.id','=','vendor_offers.vendor_id')->select('vendors.id','vendors.shop_name','vendors.profile_pic','vendor_offers.offer')->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
-			$query->from('vendor_main_categories')->select('vendor_id');
-			})->orderBy('vendor_offers.offer','DESC')->paginate(10);
+			$data=Vendor::with(['offers' => function ($query) {
+						$query->orderBy('vendor_offers.offer', 'DESC');
+					}])
+				->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address')
+				->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
+				$query->from('vendor_main_categories')->select('vendor_id');
+				})
+				->paginate(10);
+			//$data=DB::table('vendors')->join('vendor_offers','vendors.id','=','vendor_offers.vendor_id')
+			//->select('vendors.id','vendors.shop_name','vendors.profile_pic','vendor_offers.offer')
+			//->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
+			//$query->from('vendor_main_categories')->select('vendor_id');
+			//})->paginate(10);
 			
 		}else if($request->sort_by == 'low_to_high'){
-			$data=DB::table('vendors')->join('vendor_offers','vendors.id','=','vendor_offers.vendor_id')->select('vendors.id','vendors.shop_name','vendors.profile_pic','vendor_offers.offer')->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
-			$query->from('vendor_main_categories')->select('vendor_id');
-			})->orderBy('vendor_offers.offer','ASC')->paginate(10);
+			$data=Vendor::with(['offers' => function ($query) {
+						$query->orderBy('vendor_offers.offer', 'ASC');
+					}])
+				->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address')
+				->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
+				$query->from('vendor_main_categories')->select('vendor_id');
+				})
+				->paginate(10);
 		}
 		
 
@@ -501,6 +531,20 @@ class UserController extends Controller
         {
             $response['status']=true;
             $response['msg']="Saved";
+			
+			
+			//notification details 
+			$heading_user= Auth::user()->name." Started following you.";
+			
+			$receiver_id=$request->vendor_id;
+			
+			$post_url=env('NOTIFICATION_VENDOR_URL')."/follower/". Auth::user()->id;
+			$user_id=Auth::user()->id;
+			$user_type="vendor";
+			
+			
+			ProcessPush::dispatch($heading_user,$post_url,$receiver_id,$user_type,'');
+			
         }
         else{
             $response['status']=false;

@@ -29,6 +29,56 @@ class AppHelper
 			return $ret;
 
       }
+	  
+	  public static function send_Push($heading,$url,$user_type,$subscriber,$desc)
+      {
+		$content      = array(
+        "en" => 'English Message'
+		);
+		
+		$heading = array(
+		"en" => $heading
+		);
+		$us=$subscriber;
+		$arr=array("field"=>"tag","key"=>"email","relation" => "=","value"=>$us);
+	
+		$fields = array(
+        'app_id' => "b8f9d07f-eae9-449c-bceb-c4956a44351f",
+			
+        'data' => array(
+            "foo" => "bar"
+        ),
+		'included_segments' => array(
+            $user_type
+        ),
+        'contents' => $content,
+		'headings' => $heading,
+		'url'=>$url
+		);
+    
+		$fields = json_encode($fields);
+		print("\nJSON sent:\n");
+		
+		print($fields);
+		
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, "https://onesignal.com/api/v1/notifications");
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+			'Content-Type: application/json; charset=utf-8',
+			'Authorization: Basic ZGUxNjE1NTctNTFhZi00NmMxLWIxY2ItYTkyMzkxNTRjMjg0'
+		));
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+		curl_setopt($ch, CURLOPT_HEADER, FALSE);
+		curl_setopt($ch, CURLOPT_POST, TRUE);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+		
+		$response = curl_exec($ch);
+		curl_close($ch);
+		
+		return $response;
+
+      }
 		
 }
 ?>

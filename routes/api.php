@@ -66,11 +66,12 @@ Route::middleware('auth:api')->group(function () {
 	//Feed related routes 
     Route::post('get_user_feeds', [FeedController::class,'user_feed_view']);
 	Route::post('delete_feed', [FeedController::class,'delete_feed']);
+	Route::get('get_feed_comment', [FeedController::class,'get_feed_comment']);
     Route::post('user_feed_like', [FeedController::class,'user_feed_like']);
     Route::post('user_feed_save', [FeedController::class,'user_feed_save']);
     Route::post('update_feed_view', [FeedController::class,'update_feed_view']);
     Route::post('feed_report_user', [FeedController::class,'feed_report_user']);
-    Route::get('get_feed_comment', [FeedController::class,'get_feed_comment']);
+    
     Route::post('add_feed_comment', [FeedController::class,'add_feed_comment']);
 	Route::post('reply_feed_comment', [FeedController::class,'reply_feed_comment']);
     Route::post('edit_feed_comment', [FeedController::class,'edit_feed_comment']);
@@ -88,7 +89,11 @@ Route::middleware('auth:api')->group(function () {
 Route::middleware('auth:vendor-api')->group(function () {
 	
 	Route::post('fetch_vendor_notification', [VendorController::class,'fetch_vendor_notification']);
-	
+	Route::post('get_user_feeds_vendor', [FeedController::class,'user_feed_view']);
+	Route::post('delete_feed_vendor', [FeedController::class,'delete_feed']);
+	Route::post('reply_feed_comment_vendor', [FeedController::class,'reply_feed_comment']);
+    //Route::post('delete_feed_comment_vendor', [FeedController::class,'delete_feed_comment']);
+	Route::get('get_feed_comment_vendor', [FeedController::class,'get_feed_comment']);
     // our routes to be protected will go in here
     Route::post('get_vendor_profile', [VendorController::class,'get_vendor_profile']);
     Route::post('update_profile_vendor', [VendorController::class,'update_profile_vendor']);

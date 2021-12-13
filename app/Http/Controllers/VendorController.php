@@ -15,6 +15,7 @@ use App\Models\Vendor_cover;
 use App\Models\Vendor_Product;
 use App\Models\Category;
 use App\Models\Notification;
+use App\Jobs\ProcessPush;
 use App\Models\Feed_Save;
 use App\Models\Feed;
 use Illuminate\Support\Facades\Auth;
@@ -80,7 +81,7 @@ class VendorController extends Controller
      {
          $validator = Validator::make($request->all(), [ 
              'name' => 'required', 
-             'email' => 'email',
+             'email' => 'nullable|email',
              'shop_name'=>'required',
 			 'description'=>'required'
          ]);
@@ -552,7 +553,7 @@ class VendorController extends Controller
                 if($v_product->save())
                 {
                     $response['status']=true;
-                    $response['msg']="Product Added!";
+                    $response['msg']="Product Updated!";
                 }
                 else
                 {
@@ -594,16 +595,17 @@ class VendorController extends Controller
 
     public function add_vendor_offer(Request $request)
     {
+		//return $request;
+		//return Auth::user()->id;
         $validator = Validator::make($request->all(), [ 
             'offer_name'=> 'required',
             // 'offer_type'=> 'required',
             'offer'=> 'required',
             'start_date'=> 'required',
             'end_date'=>'required',
-            'vendor_id'=>'required',
+           // 'vendor_id'=>'required',
 			'offer_description'=>'required'
         ]);
-
         if ($validator->fails())
         {
             return response(['errors'=>$validator->errors()->all()], 422);
@@ -618,6 +620,7 @@ class VendorController extends Controller
         $offer->start_to =$request->end_date;
         $offer->status ='active';
         $offer->vendor_id= $vendor_id;
+		$offer->offer_description= "hi";
 		$offer->offer_description= $request->offer_description;
         if($offer->save())
         {
@@ -632,11 +635,24 @@ class VendorController extends Controller
             {
                 $data[]=["offer_id"=>$offer_id,"product_id"=>$pp];
             }
+			 
 
             if(Vendor_Offer_Product::insert($data))
             {
                 $response['status']=true;
                 $response['msg']="Offer Added!";
+				$maxid = Vendor_Offer_Product::max('offer_id');
+                $subscriber = Vendors_Subsciber::where('vendor_id',Auth::user()->id)->get(['user_id'])->toArray();
+				
+				
+				//notification details 
+				$heading_user= Auth::user()->name." has created an offer.";
+				$post_url=env('NOTIFICATION_USER_URL')."/offer/".$maxid;
+				$desc = $request->offer_description;
+				
+				//insert notification
+				ProcessPush::dispatch($heading_user,$post_url,$subscriber,"user",$desc);
+				
             }
             else
             {
@@ -657,9 +673,10 @@ class VendorController extends Controller
 
     public function update_vendor_offer(Request $request)
     {
+		//return $request;
         $validator = Validator::make($request->all(), [ 
             'offer_name'=> 'required',
-            'offer_type'=> 'required',
+            //'offer_type'=> 'required',
             'offer'=> 'required',
             'start_date'=> 'required',
             'end_date'=>'required',
@@ -679,7 +696,7 @@ class VendorController extends Controller
         $offer->offer=$request->offer;
         $offer->start_from=$request->start_date;
         $offer->start_to =$request->end_date;
-        $offer->status =$request->offer_name;
+       // $offer->status =$request->offer_name;
 		$offer->offer_description= $request->offer_description;
         if($offer->save())
         {

@@ -18,11 +18,12 @@ use App\Models\Feed;
 use App\Models\Slider;
 use App\Models\Vendor_cover;
 use App\Models\feed_content;
+use App\Models\Notification;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
-
+use App\Jobs\ProcessPush;
 class FeedController extends Controller
 {
     public function delete_feed(Request $request){
@@ -57,7 +58,8 @@ class FeedController extends Controller
         $validator = Validator::make($request->all(), [ 
             //'title' => 'required', 
             'description'=>'required',
-        'user_type'=> 'required'
+			'user_type'=> 'required',
+			'vendor_id'=>'required'
         ]);
 
 		if ($validator->fails())
@@ -70,7 +72,8 @@ class FeedController extends Controller
         $feed->feed_description=$request->description;
         $feed->feed_status='active';
         $feed->vendor_id=Auth::user()->id;
-			$feed->user_type=$request->user_type;
+		$feed->user_type=$request->user_type;
+		$feed->tag_id=$request->vendor_id;
         if($feed->save())
         {
             $response['status']=true;
@@ -100,8 +103,18 @@ class FeedController extends Controller
                     $response['msg']="Category could not be updated!";
                 }
             }
+			
+		    $user_id=Auth::user()->id;
+			$last_added_data=Feed::with('feed_content')
+			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
+			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_name' => Vendor::select('name')->whereColumn('id', 'feeds.tag_id'),'vendor_profile' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.tag_id'),'vendor_area' => Vendor::select('area')->whereColumn('id', 'feeds.tag_id')])
+			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
+			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])->where('feed_status','active')
+			->orderBy('id','desc')->first();
 
             $response['msg']= "Feed added!";
+			
+			$response['last_added_data']= $last_added_data;
         }
         else{
             $response['status']=false;
@@ -135,6 +148,39 @@ class FeedController extends Controller
         {
             $response['status']=true;
             $response['msg']="Liked";
+			
+			
+			//notification details 
+			$heading_user= Auth::user()->name." Liked your post";
+			$f_data=Feed::where('id',$request->feed_id)->get(['vendor_id','user_type','tag_id']);
+			
+			$tag_id=$f_data[0]->tag_id;
+			$user_type=$f_data[0]->user_type;
+			$user_id=$f_data[0]->vendor_id;
+			
+			if($user_type=='user')
+			{
+				$post_url=env('NOTIFICATION_USER_URL')."/feedView/".$request->feed_id;
+			}
+			else{
+				$post_url=env('NOTIFICATION_VENDOR_URL')."/feedView/".$request->feed_id;
+			}
+			
+			
+			
+			
+			ProcessPush::dispatch($heading_user,$post_url,$user_id,$user_type,'');
+			
+			if($user_type=='user')
+			{
+				$post_url=env('NOTIFICATION_VENDOR_URL')."/feedView/".$request->feed_id;
+				$heading_user= Auth::user()->name." Liked a post you are tagged in";
+				
+			
+				ProcessPush::dispatch($heading_user,$post_url,$tag_id,'vendor','');
+			
+			}
+			
         }
         else{
             $response['status']=false;
@@ -184,7 +230,7 @@ class FeedController extends Controller
 		 
         if($request->vendor_id==0 && $type=='all')
         {
-			$response=Feed::with('feed_content')
+			$response=Feed::with('feed_content')->withCount('feed_like')->withCount('feed_comment')
 			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
 			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
@@ -193,7 +239,7 @@ class FeedController extends Controller
         }
 		else if ($request->vendor_id==0 && $type!='all')
 		{
-			$response=Feed::with('feed_content')
+			$response=Feed::with('feed_content')->withCount('feed_like')->withCount('feed_comment')
 			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
 			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')])
@@ -203,7 +249,7 @@ class FeedController extends Controller
 		}
 		else if ($request->vendor_id!=0 && $type=='all')
 			{
-			$response=Feed::with('feed_content')
+			$response=Feed::with('feed_content')->withCount('feed_like')->withCount('feed_comment')
 			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
 			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
@@ -214,7 +260,7 @@ class FeedController extends Controller
 		else
 		{
 			
-			$response=Feed::with('feed_content')
+			$response=Feed::with('feed_content')->withCount('feed_like')->withCount('feed_comment')
 			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
 			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
@@ -249,6 +295,17 @@ class FeedController extends Controller
         {
             $response['status']=true;
             $response['msg']="Feed Successfully reported, Thankyou for the support";
+			
+			//notification details 
+			$heading_user= Auth::user()->name." Reported your post.";
+			$fdata = Feed::find($request->feed_id);
+			$receiver_id=$fdata->vendor_id;
+			$user_id=Auth::user()->id;
+			$user_type="vendor";
+			$post_url=env('NOTIFICATION_VENDOR_URL')."/reported_feed/". Auth::user()->id;
+			
+			
+			ProcessPush::dispatch($heading_user,$post_url,$user_id,$user_type,'');
         }
         else{
             $response['status']=false;
@@ -312,6 +369,29 @@ class FeedController extends Controller
         {
             $response['status']=true;
             $response['msg']="successful";
+			
+			//notification details 
+			$heading_user= Auth::user()->name." Commented on your post";
+			$f_data=Feed::where('id',$request->feed_id)->get(['vendor_id','user_type','tag_id']);
+			
+			$tag_id=$f_data[0]->tag_id;
+			$user_type=$f_data[0]->user_type;
+			$user_id=$f_data[0]->vendor_id;
+			
+			$post_url=env('NOTIFICATION_USER_URL')."/feedComment/".$request->feed_id;
+			
+			
+			
+			ProcessPush::dispatch($heading_user,$post_url,$user_id,$user_type,'');
+			
+			if($user_type=='user')
+			{
+				$post_url=env('NOTIFICATION_VENDOR_URL')."/feedComment/".$request->feed_id;
+				$heading_user= Auth::user()->name." Commented on a post you are tagged in";
+				
+				ProcessPush::dispatch($heading_user,$post_url,$tag_id,'vendor','');
+			
+			}
         }
         else{
             $response['status']=false;
@@ -396,6 +476,7 @@ class FeedController extends Controller
     	}
 
         $feed_comment=Feed_Comment::where('id',$request->comment_id)->where('user_id',Auth::user()->id)->delete();
+		//$feed_comment=Feed_Comment::where('id',$request->comment_id)->delete();
         if($feed_comment)
         {
             $response['status']=true;
