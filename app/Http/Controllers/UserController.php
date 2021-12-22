@@ -37,7 +37,7 @@ class UserController extends Controller
     {
 		$contact="8006435315";
 		$msg="Use 564434. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
-		
+		return 	AppHelper::send_sms2($contact,$msg);
 		$heading="this is test3";
 		$url="https://webixun.com";
 		
@@ -50,7 +50,7 @@ class UserController extends Controller
 	public function fetch_user_notification(Request $request)
 	{
 		$user_id=Auth::user()->id;
-		$notifications =Notification::join('users','users.id','notifications.received_id')->where('receiver_type','user')->orderBy('notifications.id', 'DESC')->paginate(10);
+		$notifications =Notification::join('users','users.id','notifications.received_id')->where('received_id',$user_id)->where('receiver_type','user')->orderBy('notifications.id', 'DESC')->paginate(10);
 		
 		$response['status']=true;
 		$response['data']=$notifications;
@@ -67,7 +67,7 @@ class UserController extends Controller
 		{
 			 $category= $category=Category::where('parent_id',$request->category_id)->where('status','Active')->get();
 		}else{
-			 $category=Category::where('status','Active')->get();
+			 $category=Category::where('status','Active')->where('parent_id',0)->get();
 		}
        
        
@@ -265,7 +265,7 @@ class UserController extends Controller
     {
         $user_id=Auth::user()->id;
         $user=User::find($user_id);
-
+        //return $user;
         if($user!=null)
         {
             $response['status']=true;
@@ -297,7 +297,7 @@ class UserController extends Controller
         $user=User::find($user_id);
         $user->name=$request->name;
         $user->email=$request->email;
-        $user->dob=$request->email;
+        $user->dob=$request->dob;
         $user->gender=$request->gender;
         if($user->save())
         {
@@ -373,7 +373,8 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [ 
            'category_id'=>'required',
             'latitude'=>'required',
-            'longitude'=>'required'
+            'longitude'=>'required',
+			'sort_by'=>'required'
         ]);
 
 		if ($validator->fails())
@@ -389,8 +390,10 @@ class UserController extends Controller
         - radians(" . $request->longitude . ")) 
         + sin(radians(" . $request->latitude . ")) 
         * sin(radians(`shop_latitude`))))";
-
-        $data=Vendor::with('offers')
+		
+		if($request->sort_by == 'nearby')
+		{
+			$data=Vendor::with('offers')->with('today_timing')
 		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address')
 		->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
@@ -398,8 +401,30 @@ class UserController extends Controller
 		->having('distance','<','25')
 		->orderBy('distance')
 		->paginate(10);
+		}
+		if($request->sort_by == 'high_to_low'){
 		
+		$data=Vendor::with('offers')->with('today_timing')
+		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address')
+		->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
+        $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
+        })
+		->having('distance','<','25')
+		->orderBy('discount','ASC')
+		->paginate(10);
 		
+			
+		}else if($request->sort_by == 'low_to_high'){
+				$data=Vendor::with('offers')->with('today_timing')
+		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address')
+		->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
+        $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
+        })
+		->having('distance','<','25')
+		->orderBy('discount','DESC')
+		->paginate(10);
+		
+		}
         //return $data;
 		
         if(count($data)>0)
@@ -446,67 +471,7 @@ class UserController extends Controller
   
           return json_encode($response);
       }
-	
-	public function sort_by(Request $request)
-	{
-		$validator = Validator::make($request->all(), [ 
-            'sort_by'=>'required',
-			'shop_latitude'=>'required',
-			'shop_longitude'=>'required'
-        ]);
-
-		if ($validator->fails())
-    	{
-        	return response(['errors'=>$validator->errors()->all()], 422);
-    	}
-		
-
-		$haversine = "(6371 * acos(cos(radians(" . $request->shop_latitude . ")) 
-		* cos(radians(`shop_latitude`)) 
-		* cos(radians(`shop_longitude`) 
-		- radians(" . $request->shop_longitude . ")) 
-		+ sin(radians(" . $request->shop_latitude . ")) 
-		* sin(radians(`shop_latitude`))))";
-		if($request->sort_by == 'high_to_low'){
-			$data=Vendor::with(['offers' => function ($query) {
-						$query->orderBy('vendor_offers.offer', 'DESC');
-					}])
-				->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address')
-				->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
-				$query->from('vendor_main_categories')->select('vendor_id');
-				})
-				->paginate(10);
-			//$data=DB::table('vendors')->join('vendor_offers','vendors.id','=','vendor_offers.vendor_id')
-			//->select('vendors.id','vendors.shop_name','vendors.profile_pic','vendor_offers.offer')
-			//->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
-			//$query->from('vendor_main_categories')->select('vendor_id');
-			//})->paginate(10);
-			
-		}else if($request->sort_by == 'low_to_high'){
-			$data=Vendor::with(['offers' => function ($query) {
-						$query->orderBy('vendor_offers.offer', 'ASC');
-					}])
-				->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address')
-				->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query){
-				$query->from('vendor_main_categories')->select('vendor_id');
-				})
-				->paginate(10);
-		}
-		
-
-        if(sizeof($data)>0)
-        {
-            $response['status']=true;
-                $response['data']=$data;
-            }
-            else
-            {
-                $response['status']=false;
-                $response['msg']="No Data Found";
-            }
-            return json_encode($response);
-	}
-        
+	  
 
     public function follow_vendor_user(Request $request)
 	{
@@ -575,7 +540,7 @@ class UserController extends Controller
     
     public function fetch_home_sliders()
     {
-        $data=Slider::all();
+        $data=Slider::where('status','Active')->get();
     
         if(count($data)>0)
         {

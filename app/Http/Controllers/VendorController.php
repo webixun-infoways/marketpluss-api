@@ -18,6 +18,7 @@ use App\Models\Notification;
 use App\Jobs\ProcessPush;
 use App\Models\Feed_Save;
 use App\Models\Feed;
+use App\Models\vendor_timing;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
@@ -32,10 +33,10 @@ class VendorController extends Controller
 
         $response['followers']=Vendors_Subsciber::where('vendor_id',$vendor_id)->count();
         $response['feed_save']=Feed_Save::whereIn('feed_id', function($q) use($vendor_id){
-            $q->from('feeds')->where('vendor_id',$vendor_id)->selectRaw('id');
+            $q->from('feeds')->where('vendor_id',$vendor_id)->where('user_type','vendor')->selectRaw('id');
         })->count();
 
-        $response['feed_view']=Feed::where('vendor_id',$vendor_id)->sum('feed_view');
+        $response['feed_view']=Feed::where('vendor_id',$vendor_id)->  where('user_type','vendor')->sum('feed_view');
 
         $res['status']=true;
         $res['data']=$response;
@@ -43,12 +44,48 @@ class VendorController extends Controller
     }
 	
 	
+	//get store timing
+	
+	public function update_store_timing(Request $request)
+	{
+		$validator = Validator::make($request->all(), [ 
+             'days'=> 'required|array'
+         ]);
+ 
+         if ($validator->fails())
+         {
+             return response(['errors'=>$validator->errors()->all()], 422);
+         }
+		 $vendor_id=Auth::user()->id;
+		$del= vendor_timing::where('vendor_id',$vendor_id)->delete();
+		
+		$data=array();
+		foreach($request->days as $key => $d)
+		{
+			$data[]=['vendor_id'=>$vendor_id,'day_status'=>$d['status'], 'day_name'=> $d['day_name'], 'open_timing'=> date("H:i:s",strtotime($d['open'])) , 'close_timing'=> date("H:i:s",strtotime($d['close']))]; 
+		}
+		 
+		 if(vendor_timing::insert($data))
+        {
+            $response['status']=true;
+            $response['msg']="Timing Successfully Updated!";
+        }
+        else{
+            $response['status']=false;
+            $response['msg']="Timing could not be updated!";
+        }
+		
+			return json_encode($response,JSON_UNESCAPED_SLASHES);
+			
+	}
+	
+	
 	//get vendor notifications
 	
 	public function fetch_vendor_notification(Request $request)
 	{
 		$user_id=Auth::user()->id;
-		$notifications =Notification::join('vendors','vendors.id','notifications.received_id')->where('receiver_type','vendor')->orderBy('notifications.id', 'DESC')->paginate(10);
+		$notifications =Notification::join('vendors','vendors.id','notifications.received_id')->where('received_id',$user_id)->where('receiver_type','vendor')->orderBy('notifications.id', 'DESC')->paginate(10);
 		
 		$response['status']=true;
 		$response['data']=$notifications;
@@ -60,7 +97,7 @@ class VendorController extends Controller
       public function get_vendor_profile(Request $request)
       {
           $user_id=Auth::user()->id;
-          $user=Vendor::find($user_id);
+          $user=Vendor::with('timings')->where('id',$user_id)->get();
   
           if($user!=null)
           {
@@ -790,6 +827,9 @@ class VendorController extends Controller
     }
 	
 	
+	
+	
+	
     public function get_vendor_details(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
@@ -816,7 +856,7 @@ class VendorController extends Controller
 		//return $dd;
 		
 		 //fetch store details of vendor
-        $store_data=Vendor::with('covers')->where('id','=',$request->vendor_id)->
+        $store_data=Vendor::with('covers')->with('today_timing')->where('id','=',$request->vendor_id)->
 		addSelect(['vendor_follow' =>Vendors_Subsciber::select('vendor_id')->whereColumn('vendor_id', 'vendors.id')->where('user_id',$user_id)])->selectRaw("{$haversine} AS distance")->get();
 
         //$distance=Vendor::get();

@@ -7,14 +7,15 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FaqController;
-
+use App\Http\Controllers\HomeController;
 
 
 //Open Routes for fetch the data globally 
 Route::get('fetch_home_sliders', [UserController::class,'fetch_home_sliders']);
 Route::get('get_category_vendor', [VendorController::class,'get_category_vendor']);
-Route::get('get_all_category', [UserController::class,'get_all_category']);
 
+Route::get('fetch_home_data', [HomeController::class,'fetch_home_data']);
+Route::get('get_all_category', [UserController::class,'get_all_category']);
 Route::get('send_mail', [UserController::class,'send_mail']);
 //auth related routes
 Route::post('mobile-verification', [AuthController::class,'mobile_verification']);
@@ -51,7 +52,6 @@ Route::middleware('auth:api')->group(function () {
    //vendors related Routes
     Route::post('follow_vendor_user',[UserController::class,'follow_vendor_user']);
     Route::post('get_category_vendors', [UserController::class,'get_category_vendors']);
-	Route::post('sort_by', [UserController::class,'sort_by']);
 	Route::post('get_vendor_details', [VendorController::class,'get_vendor_details']);
     Route::post('get_vendor_product', [VendorController::class,'get_vendor_product']);
     Route::post('update_shop_visit_contact', [VendorController::class,'update_shop_visit']);
@@ -87,7 +87,9 @@ Route::middleware('auth:api')->group(function () {
 
 //condition  for protect the vendor route
 Route::middleware('auth:vendor-api')->group(function () {
-	
+	Route::post('update_store_timing', [VendorController::class,'update_store_timing']);
+	Route::post('get_store_timing', [VendorController::class,'get_store_timing']);
+		
 	Route::post('fetch_vendor_notification', [VendorController::class,'fetch_vendor_notification']);
 	Route::post('get_user_feeds_vendor', [FeedController::class,'user_feed_view']);
 	Route::post('delete_feed_vendor', [FeedController::class,'delete_feed']);

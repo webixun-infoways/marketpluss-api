@@ -29,13 +29,14 @@ class AuthController extends Controller
 		
 		$contact=$request->contact;
 		
-		//$otp=rand(1000,9999);
-		$otp=1234;
+		$otp=rand(1000,9999);
+		//$otp=1234;
 		$msg="Use $otp. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
 		
 		$data['contact']=$contact;
 		$data['msg']=$msg;
 		
+		//AppHelper::send_sms2($data['contact'],$msg);
 		//jobs for end the sms 
 		ProcessSms::dispatch($data);
 	

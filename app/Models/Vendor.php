@@ -58,4 +58,15 @@ class Vendor extends Authenticatable
 	public function offers(){
 		return $this->hasOne(Vendor_Offer::class)->where('status','active')->latest();
 	}
+	
+	public function timings(){
+		return $this->hasMany(vendor_timing::class)->where('day_status','1');
+	}
+	
+	public function today_timing(){
+		
+		$day=date("l");
+		return $this->hasMany(vendor_timing::class)->where('open_timing','<', NOW())->where('close_timing','>', NOW())->where('day_name',$day)->where('day_status','1');
+	}
+	
 }

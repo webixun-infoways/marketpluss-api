@@ -55,25 +55,26 @@ class FeedController extends Controller
     //function for feed likes
     public function add_feed(Request $request)
     {
+		//return $request;
         $validator = Validator::make($request->all(), [ 
             //'title' => 'required', 
             'description'=>'required',
 			'user_type'=> 'required',
-			'vendor_id'=>'required'
+			'tag_id'=>'required'
         ]);
 
 		if ($validator->fails())
     	{
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
-
+        //return Auth::user()->id;
         $feed=new Feed;
         //$feed->feed_title=$request->title;
         $feed->feed_description=$request->description;
         $feed->feed_status='active';
         $feed->vendor_id=Auth::user()->id;
 		$feed->user_type=$request->user_type;
-		$feed->tag_id=$request->vendor_id;
+		$feed->tag_id=$request->tag_id;
         if($feed->save())
         {
             $response['status']=true;
@@ -331,7 +332,7 @@ class FeedController extends Controller
 
 		$feed_id=$request->feed_id;
 		$user_id=Auth::user()->id;
-        $feed=Feed::with('feed_content')
+        $feed=Feed::with('feed_content')->withCount('feed_like')
 			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
 			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
@@ -623,7 +624,7 @@ class FeedController extends Controller
     public function get_saved_feeds(Request $request)
     {
        $user_id=Auth::user()->id;
-        $data=Feed::with('feed_content')
+        $data=Feed::with('feed_content')->withCount('feed_like')
 		->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
 			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->whereIn('feeds.id',function($q)use($user_id){
