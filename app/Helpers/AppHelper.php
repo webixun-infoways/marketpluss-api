@@ -44,12 +44,12 @@ class AppHelper
 	
 		$fields = array(
         'app_id' => "b8f9d07f-eae9-449c-bceb-c4956a44351f",
-		'filters' =>array($arr),
+		
         'data' => array(
             "foo" => "bar"
         ),
 		'included_segments' => array(
-            $user_type."-mp-login-jsagjsdjka"
+            "Subscribed Users"
         ),
         'contents' => $content,
 		'headings' => $heading,

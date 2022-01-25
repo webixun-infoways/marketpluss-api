@@ -37,13 +37,13 @@ class UserController extends Controller
     {
 		$contact="8006435315";
 		$msg="Use 564434. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
-		return 	AppHelper::send_sms2($contact,$msg);
+		//return 	AppHelper::send_sms2($contact,$msg);
 		$heading="this is test3";
 		$url="https://webixun.com";
 		
 		$user_type="Users";
 		$users=1;
-		return AppHelper::send_Push($heading,$url,$user_type,$users);
+		return AppHelper::send_Push($heading,$url,$user_type,$users,"khkdhsks");
 		//return	ProcessPush::dispatch($heading,$url);
     }
 	
