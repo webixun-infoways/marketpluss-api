@@ -13,6 +13,7 @@ use App\Models\Vendor;
 use App\Models\Vendor_Product;
 use App\Models\Vendors_Subsciber;
 use App\Models\Vendor_category;
+use App\Models\vendor_rating;
 use App\Models\Feed_Comment;
 use App\Models\Feed;
 use App\Models\Vendor_Offer;
@@ -20,6 +21,8 @@ use App\Models\Slider;
 use App\Models\Vendor_cover;
 use App\Models\Category;
 use App\Models\user_product_saves;
+use App\Models\refer_earn_setup;
+use App\Models\point_level;
 use App\Models\user_fev_vendors;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -46,6 +49,58 @@ class UserController extends Controller
 		return AppHelper::send_Push($heading,$url,$user_type,$users,"khkdhsks");
 		//return	ProcessPush::dispatch($heading,$url);
     }
+	
+	
+	//method for give vendor rating
+	
+	public function vendor_rating(Request $request)
+	{
+		$validator = Validator::make($request->all(), [ 
+            'rating' => 'required', 
+            'vendor_id' => 'required'
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+		
+		$vr=new vendor_rating;
+		
+		$vr->vendor_id=$request->vendor_id;
+		$vr->user_id =	Auth::user()->id;
+		$vr->vendor_rating =	$request->rating;
+		$vr->vendor_review =	$request->review;
+		$vr->review_status = 'success';
+		
+		try{
+			$vr->save();
+		
+			$response['status']=true;
+			$response['msg']="successfully submited";
+	
+		}
+		catch(Exception $e)
+		{
+			return "Ddd";
+		}
+		
+		return json_encode($response);
+	}
+	
+	public function get_earn_data()
+	{
+		$data=refer_earn_setup::all();
+		$data2=point_level::all();
+		$data['wallet']=Auth::user()->wallet;
+		$data['share_code']=Auth::user()->share_code;
+		$response['status']=true;
+		$response['data']=$data;
+		
+		$response['data2']=$data2;
+		return json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
+	
 	
 	public function fetch_user_notification(Request $request)
 	{
@@ -293,12 +348,22 @@ class UserController extends Controller
     	}
         
         $user_id=Auth::user()->id;
-
+		
         $user=User::find($user_id);
+		
+		if(isset($request->update_type))
+		{
+			$str_result = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz'; 
+			
+			$name=substr(str_replace(' ', '',$request->name), 0, 4); 
+			$rand= substr(str_shuffle($str_result), 0, 6); 
+			$user->share_code =strtoupper($name.$rand);
+		}
         $user->name=$request->name;
         $user->email=$request->email;
         $user->dob=$request->dob;
         $user->gender=$request->gender;
+		
         if($user->save())
         {
             $response['status']=true;

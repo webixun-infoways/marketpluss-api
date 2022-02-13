@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use App\Helpers\AppHelper;
 use App\Jobs\ProcessSms;
+use App\Models\refer_earn_setup;
 class AuthController extends Controller
 {
 	//method for contact verification 
@@ -29,16 +30,30 @@ class AuthController extends Controller
 		
 		$contact=$request->contact;
 		
-		$otp=rand(1000,9999);
-		//$otp=1234;
-		$msg="Use $otp. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
+		if(env("APP_DEBUG")) // condition to check this is beta or release
+		{
+			$otp=1234;
+			$msg="Use $otp. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
+			$data['contact']=$contact;
+			$data['msg']=$msg;
+		}
+		else
+		{
+			$otp=rand(1000,9999);
+			$msg="Use $otp. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
+			
+			$data['contact']=$contact;
+			$data['msg']=$msg;
 		
-		$data['contact']=$contact;
-		$data['msg']=$msg;
+			//AppHelper::send_sms2($data['contact'],$msg);
+			//jobs for end the sms 
+			ProcessSms::dispatch($data);
+		}
 		
-		//AppHelper::send_sms2($data['contact'],$msg);
-		//jobs for end the sms 
-		ProcessSms::dispatch($data);
+		
+		
+		// $request->header('User-Agent');
+		//return $request->ip();
 	
 		$otp=Hash::make($otp);
 		if($request->verification_type=='user')
@@ -115,6 +130,18 @@ class AuthController extends Controller
 
 			if($user->name == " " || $user->name == null)
 			{
+				//code for refer & earn plan
+				$getip = AppHelper::get_ip();
+				$getdevice = AppHelper::get_device();
+				$getos = AppHelper::get_os();
+				
+				return json_encode([$getip,$getdevice,$getos]);
+				refer_earn_setup::where("user_ip_address",$getip)
+				->where("refer_status","pending")
+				->where("user_device",$getdevice)
+				->where("user_os",$getos)
+				->update(['user_id' => $user->id,'refer_status'=>'register']);
+				
             	//now return this token on success login attempt
 				$response = ['msg' => 'ok','token' => $user->access_token,'user_type' => 'register','usr' => $user->id];
 			}

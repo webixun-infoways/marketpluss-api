@@ -44,6 +44,34 @@ class VendorController extends Controller
     }
 	
 	
+	
+	
+	public function get_vendor_data_using_code(Request $request)
+	{
+		$validator = Validator::make($request->all(), [ 
+             'vendor_code'=> 'required'
+         ]);
+		 
+		  if ($validator->fails())
+         {
+             return response(['errors'=>$validator->errors()->all()], 422);
+         }
+		 
+		 $data=Vendor::where('vendor_code',$request->vendor_code)->get();
+		 
+		 if(count($data)>0)
+		 {
+			 $response['data']=$data;
+			 $response['status']=true;
+		 }
+		 else
+		 {
+			 $response['msg']="InvalidCode";
+			 $response['status']=false;
+		 }
+		 return json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
+	
 	//get store timing
 	
 	public function update_store_timing(Request $request)
@@ -129,6 +157,16 @@ class VendorController extends Controller
          }
          
         $vendor_id=Auth::user()->id;
+		
+		if(isset($request->update_type))
+		{
+			$str_result = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz'; 
+			
+			$name=substr(str_replace(' ', '',$request->name), 0, 4); 
+			$rand= substr(str_shuffle($str_result), 0, 6); 
+			$user->share_code =strtoupper($name.$rand);
+		}
+		
          $user=vendor::find($vendor_id);
          $user->name=$request->name;
          $user->email=$request->email;

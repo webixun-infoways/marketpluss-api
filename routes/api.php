@@ -77,8 +77,11 @@ Route::middleware('auth:api')->group(function () {
     Route::post('edit_feed_comment', [FeedController::class,'edit_feed_comment']);
     Route::post('delete_feed_comment', [FeedController::class,'delete_feed_comment']);
     Route::post('get_saved_feeds', [FeedController::class,'get_saved_feeds']);
-   Route::post('get_single_feed_user',[FeedController::class,'get_single_feed']);
-
+	Route::post('get_single_feed_user',[FeedController::class,'get_single_feed']);
+	
+	Route::post('get_earn_data',[UserController::class,'get_earn_data']);
+	Route::post('get_vendor_data_using_code',[VendorController::class,'get_vendor_data_using_code']);
+	Route::post('give_vendor_rating',[UserController::class,'vendor_rating']);
     //for logout 
     Route::post('logout_user', [AuthController::class,'logout']);
 });
