@@ -133,13 +133,14 @@ class AuthController extends Controller
 				//code for refer & earn plan
 				$getip = AppHelper::get_ip();
 				$getdevice = AppHelper::get_device();
-				$getos = AppHelper::get_os();
+				$getos = $request->oprating_system;
 				
-				return json_encode([$getip,$getdevice,$getos]);
+				//apply refer and earn code 
+				
 				refer_earn_setup::where("user_ip_address",$getip)
 				->where("refer_status","pending")
-				->where("user_device",$getdevice)
-				->where("user_os",$getos)
+				->where("user_device","Mobile")
+				->where("user_os",ucwords($getos))
 				->update(['user_id' => $user->id,'refer_status'=>'register']);
 				
             	//now return this token on success login attempt

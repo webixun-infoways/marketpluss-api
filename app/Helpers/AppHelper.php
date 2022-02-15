@@ -39,15 +39,17 @@ class AppHelper
 		$heading = array(
 		"en" => $heading
 		);
+
 		$us=$subscriber;
-		$arr=array("field"=>"tag","key"=>"v_id","relation" => "=","value"=>$us);
+		$arr=array(array("field"=>"tag","key"=>"id","relation" => "=","value"=>$us),array("operator" => "AND"),array("field" => "tag", "relation" => "=", "value" => $user_type));
 	
 		$fields = array(
-        'app_id' => "b8f9d07f-eae9-449c-bceb-c4956a44351f",
+        'app_id' => "7182193d-1451-4b0e-ab3b-317d3fccb6b4",
 		
         'data' => array(
             "foo" => "bar"
         ),
+		'filters' => $arr,
 		'included_segments' => array(
             "Subscribed Users"
         ),
@@ -65,7 +67,7 @@ class AppHelper
 		curl_setopt($ch, CURLOPT_URL, "https://onesignal.com/api/v1/notifications");
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 			'Content-Type: application/json; charset=utf-8',
-			'Authorization: Basic MjBiMDdhZGMtZjc4Yi00NTVkLTgzZTEtZjIxNDg1NTYyN2Nh'
+			'Authorization: Basic NGY0MzcxNjctZGZjNC00YjgwLTkwZTMtZGQzZTg3YTZhNjcz'
 		));
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 		curl_setopt($ch, CURLOPT_HEADER, FALSE);
@@ -128,9 +130,9 @@ class AppHelper
   			'/mac_powerpc/i'  => 'Mac OS 9',
   			'/linux/i'  => 'Linux',
   			'/ubuntu/i'  => 'Ubuntu',
-  			'/iphone/i'  => 'iPhone',
+  			'/iphone/i'  => 'ios',
   			'/ipod/i'  => 'iPod',
-  			'/ipad/i'  => 'iPad',
+  			'/ipad/i'  => 'ios',
   			'/android/i'  => 'Android',
   			'/blackberry/i'  => 'BlackBerry',
   			'/webos/i'  => 'Mobile',

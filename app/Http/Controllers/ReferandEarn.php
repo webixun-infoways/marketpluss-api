@@ -84,6 +84,6 @@ class ReferandEarn extends Controller
 
 $response['hh'] = $getos;
 		
-		//echo json_encode($response);
+		echo json_encode($response);
     }
 }

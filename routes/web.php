@@ -15,7 +15,7 @@ use App\Http\Controllers\ReferandEarn;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    echo "Welcome to MarketPluss.";
 });
 
 Route::get('/{refer_id}',[ReferandEarn::class,'genrateRequest']);
