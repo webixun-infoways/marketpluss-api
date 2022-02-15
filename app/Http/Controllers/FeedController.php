@@ -167,9 +167,7 @@ class FeedController extends Controller
 				$post_url=env('NOTIFICATION_VENDOR_URL')."/feedView/".$request->feed_id;
 			}
 			
-			
-			
-			
+		
 			ProcessPush::dispatch($heading_user,$post_url,$user_id,$user_type,'');
 			
 			if($user_type=='user')

@@ -39,10 +39,22 @@ class AppHelper
 		$heading = array(
 		"en" => $heading
 		);
-
+		
 		$us=$subscriber;
-		$arr=array(array("field"=>"tag","key"=>"id","relation" => "=","value"=>$us),array("operator" => "AND"),array("field" => "tag", "relation" => "=", "value" => $user_type));
+
+		if($user_type == 'user')
+		{
+			$tag="MP-USERS";
+			$arr=array(array("field"=>"tag","key"=>"id","relation" => "=","value"=>$us),array("operator" => "AND"),array("field" => "tag","key"=>"account_type", "relation" => "=", "value" => "user-bmguj1212927ns"));
 	
+		}
+		else
+		{
+			$tag="MP-Vendor";
+			$arr=array(array("field"=>"tag","key"=>"id","relation" => "=","value"=>$us),array("operator" => "AND"),array("field" => "tag","key"=>"account_type", "relation" => "=", "value" => "vendor-bmguj1212927ns"));
+	
+		}
+		
 		$fields = array(
         'app_id' => "7182193d-1451-4b0e-ab3b-317d3fccb6b4",
 		
@@ -50,24 +62,21 @@ class AppHelper
             "foo" => "bar"
         ),
 		'filters' => $arr,
-		'included_segments' => array(
-            "Subscribed Users"
-        ),
         'contents' => $content,
 		'headings' => $heading,
 		'url'=>$url
 		);
     
 		$fields = json_encode($fields);
-		print("\nJSON sent:\n");
+		// print("\nJSON sent:\n");
 		
-		print($fields);
+		// print($fields);
 		
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, "https://onesignal.com/api/v1/notifications");
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 			'Content-Type: application/json; charset=utf-8',
-			'Authorization: Basic NGY0MzcxNjctZGZjNC00YjgwLTkwZTMtZGQzZTg3YTZhNjcz'
+			'Authorization: Basic OGFhZjQ2ZDEtZGMzMy00ZjFmLTg3MzgtODAwODBkMzlmZmVj'
 		));
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 		curl_setopt($ch, CURLOPT_HEADER, FALSE);

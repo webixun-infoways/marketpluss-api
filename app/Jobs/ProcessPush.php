@@ -59,9 +59,11 @@ class ProcessPush implements ShouldQueue
 					'received_id'=>$id,
 				];
 				
+				//request to send push to App
 				AppHelper::send_Push($this->heading,$this->url,$this->user_type,$id,$this->desc);
 			}
 			
+			//insert notification in DB
 			Notification::insert($data);
 		
 	   
