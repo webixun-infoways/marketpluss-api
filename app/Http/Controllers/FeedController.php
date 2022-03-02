@@ -10,6 +10,7 @@ use App\Models\Feed_like;
 use App\Models\Feed_Report;
 use App\Models\Feed_Save;
 use App\Models\Vendor;
+use App\Models\point_level;
 use App\Models\Vendor_Product;
 use App\Models\Vendors_Subsciber;
 use App\Models\Vendor_category;
@@ -24,6 +25,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use App\Jobs\ProcessPush;
+use App\Http\Controllers\UserTransactionController;
 class FeedController extends Controller
 {
     public function delete_feed(Request $request){
@@ -116,6 +118,15 @@ class FeedController extends Controller
             $response['msg']= "Feed added!";
 			
 			$response['last_added_data']= $last_added_data;
+			
+			//Cashback Initiated
+			$permission=new UserTransactionController();
+			$coin = point_level::get();
+	        
+			$heading_user= "Cashback Initialted Into Your Account!";
+			$permission->credit_coin($user_id,$heading_user,$coin[0]->feed_points,'success','credit');
+		    $post_url="https://marketpluss.com/";
+		    ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
         }
         else{
             $response['status']=false;

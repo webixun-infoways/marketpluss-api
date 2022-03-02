@@ -8,4 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class vendor_rating extends Model
 {
     use HasFactory;
+	
+	public function vendor()
+	{
+		return $this->belongsTo(Vendor::class);
+	}
+	
+	public function user()
+	{
+		return $this->belongsTo(User::class);
+	}
 }

@@ -162,7 +162,8 @@ class VendorController extends Controller
 		{
 			$str_result = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz'; 
 			
-			$name=substr(str_replace(' ', '',$request->name), 0, 4); 
+			$name=substr(str_replace(' ', '',$request->shop_name), 0, 4); 
+			//return $name;
 			$rand= substr(str_shuffle($str_result), 0, 6); 
 			$user->share_code =strtoupper($name.$rand);
 		}
@@ -908,7 +909,7 @@ class VendorController extends Controller
             $response['data']=$store_data;
             //$response['distance']=$distance; 
 			$response['categories']=Vendor_category::with('products')->where('vendor_id',$request->vendor_id)->get();
-            $response['data']['followers']=Vendors_Subsciber::where('vendor_id',$request->vendor_id)->count();
+            $response['data'][0]['followers']=Vendors_Subsciber::where('vendor_id',$request->vendor_id)->count();
         }
         else{
             $response['status']=false;

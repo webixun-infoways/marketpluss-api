@@ -94,7 +94,7 @@ class AuthController extends Controller
 		// $image_data= $obj->send_sms($contact,$msg);
 
 		$response['msg']='ok';
-		echo json_encode($response);
+		return json_encode($response);
 	}
 
 
@@ -207,6 +207,35 @@ class AuthController extends Controller
 	public function unauthorized()
 	{
 		return response()->json(['error' => 'Unauthorized Access!'], 401);
+	}
+	
+	public function validate_upi_id(Request $request)
+	{
+		$validator = Validator::make($request->all(), [ 
+            'upi_id' => 'required'
+        ]);
+		
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+		
+		
+		
+		$upi_id=$request->upi_id;
+		$data="";
+		if ($data == "")
+		{
+			$response['status']=true;
+			$response['data']=$upi_id;
+		}
+		else
+		{
+			$response['status']=true;
+			$response['msg']="Invalid UPI, Try Again";
+		}
+		
+		return json_encode($response);
 	}
 
 }

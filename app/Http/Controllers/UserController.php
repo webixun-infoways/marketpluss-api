@@ -30,9 +30,9 @@ use Illuminate\Support\Facades\Crypt;
 use App\Models\Notification;
 use App\Jobs\Processmail;
 use App\Jobs\ProcessPush;
-
+use App\Http\Controllers\UserTransactionController;
 use App\Helpers\AppHelper;
-
+use App\Models\user_txn_log;
 class UserController extends Controller
 {
 	//fetch front category for user & vendor
@@ -75,7 +75,22 @@ class UserController extends Controller
 		
 		try{
 			$vr->save();
-		
+			//Cashback Initiated
+			$permission=new UserTransactionController();
+			$coin = point_level::get();
+			//Point credit to Vendor
+	        $permission->credit_coin($request->vendor_id,'12345',$coin[0]->review_point,'Success','UPI');
+			//Point credit to User
+			$permission->credit_coin(Auth::user()->id,'12345',$coin[0]->review_point,'Success','UPI');
+			
+			$heading_user= "Cashback Initialted for feed review";
+			$heading_vendor= "Your Feed Just Reviewd";
+		    $post_url="https://marketpluss.com/";
+			//Notification to User
+		    ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
+			//Notification to vendor
+			ProcessPush::dispatch($heading_vendor,$post_url,$request->vendor_id,'vendor','');
+			
 			$response['status']=true;
 			$response['msg']="successfully submited";
 	
@@ -88,17 +103,100 @@ class UserController extends Controller
 		return json_encode($response);
 	}
 	
+	
+	//user_get_vendor_reviews
+	
+	public function user_get_vendor_reviews(Request $request)
+	{
+		$user_id=Auth::user()->id;
+		
+		$vr=vendor_rating::with('vendor')->where('vendor_ratings.user_id',$user_id)->get();
+		
+		if(count($vr)>0)
+		{
+			$response['status']=true;
+		$response['data']=$vr;
+		}
+		else
+		{
+			$response['status']=true;
+		$response['msg']="No data found.";
+		}
+		
+		return json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
+	
+	
+	public function get_vendor_reviews(Request $request)
+	{
+		$validator = Validator::make($request->all(), [ 
+            'vendor_id' => 'required'
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+		$vendor_id=$request->vendor_id;
+		
+		$vr=vendor_rating::with('user')->with('vendor')->where('vendor_ratings.vendor_id',$vendor_id)->orderBy('id','DESC')->get();
+		
+		$total_rating= count($vr);
+		//$vr=vendor_rating::selectRaw('*,count(vendor_ratings.*')->where('vendor_ratings.vendor_id',$vendor_id)->get();
+
+		
+		$rating_per=vendor_rating::selectRaw('count(vendor_rating)/'.$total_rating.' as percentage,vendor_rating')->where('vendor_id',$vendor_id)->groupBy('vendor_rating')->orderBy('vendor_rating')->get();
+		//$vr=vendor_rating::selectRaw('count(*) as cc')->addSelect(['rate1' =>vendor_rating::selectRaw('count(*)/cc')->whereColumn('vendor_id', 'vendor_ratings.vendor_id')->where('vendor_rating',5)])->where('vendor_ratings.vendor_id',$vendor_id)->get();
+		
+		if(count($vr)>0)
+		{
+			$response['status']=true;
+			$response['data']=$vr;
+			$response['data'][0]['rating_percentage']=$rating_per;
+		}
+		else
+		{
+			$response['status']=true;
+		$response['msg']="No data found.";
+		}
+		
+		return json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
+	
+	
 	public function get_earn_data()
 	{
 		$data=refer_earn_setup::all();
 		$data2=point_level::all();
 		$data['wallet']=Auth::user()->wallet;
+		$data['upi']=Auth::user()->upi_id;
 		$data['share_code']=Auth::user()->share_code;
 		$response['status']=true;
 		$response['data']=$data;
 		
 		$response['data2']=$data2;
 		return json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
+	
+	
+	public function get_user_transations()
+	{
+		$user_id=Auth::user()->id;
+		
+		$data=user_txn_log::where('user_id',$user_id)->orderBy('id','DESC')->get();
+		
+		if(count($data)>0)
+		{
+			$response['status']=true;
+			$response['data']=$data;
+		}
+		else
+		{
+			$response['status']=false;
+			$response['msg']="No transactions found";
+		}
+		
+		return json_encode($response);
 	}
 	
 	
@@ -459,7 +557,7 @@ class UserController extends Controller
 		if($request->sort_by == 'nearby')
 		{
 			$data=Vendor::with('offers')->with('today_timing')
-		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address')
+		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating')
 		->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
         })
@@ -470,7 +568,7 @@ class UserController extends Controller
 		if($request->sort_by == 'high_to_low'){
 		
 		$data=Vendor::with('offers')->with('today_timing')
-		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address')
+		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating')
 		->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
         })
@@ -481,7 +579,7 @@ class UserController extends Controller
 			
 		}else if($request->sort_by == 'low_to_high'){
 				$data=Vendor::with('offers')->with('today_timing')
-		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address')
+		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating')
 		->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
         })
