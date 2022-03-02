@@ -129,6 +129,7 @@ class UserController extends Controller
 	
 	public function get_vendor_reviews(Request $request)
 	{
+		return $request;
 		$validator = Validator::make($request->all(), [ 
             'vendor_id' => 'required'
         ]);

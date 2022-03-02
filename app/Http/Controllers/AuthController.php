@@ -39,7 +39,7 @@ class AuthController extends Controller
 		}
 		else
 		{
-			$otp=rand(1000,9999);
+			$otp=1234;
 			$msg="Use $otp. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
 			
 			$data['contact']=$contact;
@@ -113,8 +113,9 @@ class AuthController extends Controller
 
 		if($request->verification_type=='user')
 		{
+			//return $request;
 			$user = User::where("contact", $request->contact)->first();
-        	
+        	//return $user;
 			if(!isset($user)){
 				return response()->json(['error' => 'Account not found.'], 401);
        		}
@@ -142,7 +143,7 @@ class AuthController extends Controller
 				->where("user_device","Mobile")
 				->where("user_os",ucwords($getos))
 				->update(['user_id' => $user->id,'refer_status'=>'register']);
-				
+				//return "Hello";
             	//now return this token on success login attempt
 				$response = ['msg' => 'ok','token' => $user->access_token,'user_type' => 'register','usr' => $user->id];
 			}

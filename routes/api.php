@@ -22,7 +22,7 @@ Route::post('mobile-verification', [AuthController::class,'mobile_verification']
 Route::post('otp-verification', [AuthController::class,'otp_verification']);
 
 
-Route::get('unauthorized', [AuthController::class,'unauthorized']);
+Route::get('unauthorizeds', [AuthController::class,'unauthorized']);
 Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
 
 Route::post('get_single_feed', [FeedController::class,'get_single_feed']);
