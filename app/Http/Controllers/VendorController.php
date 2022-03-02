@@ -11,6 +11,7 @@ use App\Models\Vendor_Offer;
 use App\Models\Vendor_Offer_Product;
 use App\Models\vendor_shop_visit;
 use App\Models\Vendors_Subsciber;
+use App\Models\vendor_rating;
 use App\Models\Vendor_cover;
 use App\Models\Vendor_Product;
 use App\Models\Category;
@@ -27,7 +28,7 @@ class VendorController extends Controller
     public function get_vendor_data(Request $request)
     {
         $vendor_id=Auth::user()->id;
-
+		$response['current_rating']=Auth::user()->current_rating;
         $response['shop_visit']=vendor_shop_visit::where('vendor_id',$vendor_id)->where('user_activity','shop_visit')->count();
         $response['contact']=vendor_shop_visit::where('vendor_id',$vendor_id)->where('user_activity','contact')->count();
 
@@ -1298,5 +1299,32 @@ class VendorController extends Controller
         return json_encode($response);
     }
     
-    
+    public function vendorReviewsRating()
+	{
+		
+		$vendor_id=Auth::user()->id;
+		
+		$vr=vendor_rating::with('user')->with('vendor')->where('vendor_ratings.vendor_id',$vendor_id)->orderBy('id','DESC')->get();
+		
+		$total_rating= count($vr);
+		//$vr=vendor_rating::selectRaw('*,count(vendor_ratings.*')->where('vendor_ratings.vendor_id',$vendor_id)->get();
+
+		
+		$rating_per=vendor_rating::selectRaw('count(vendor_rating)/'.$total_rating.' as percentage,vendor_rating')->where('vendor_id',$vendor_id)->groupBy('vendor_rating')->orderBy('vendor_rating')->get();
+		//$vr=vendor_rating::selectRaw('count(*) as cc')->addSelect(['rate1' =>vendor_rating::selectRaw('count(*)/cc')->whereColumn('vendor_id', 'vendor_ratings.vendor_id')->where('vendor_rating',5)])->where('vendor_ratings.vendor_id',$vendor_id)->get();
+		
+		if(count($vr)>0)
+		{
+			$response['status']=true;
+			$response['data']=$vr;
+			$response['data'][0]['rating_percentage']=$rating_per;
+		}
+		else
+		{
+			$response['status']=true;
+		$response['msg']="No data found.";
+		}
+		
+		return json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
 }
