@@ -69,4 +69,6 @@ class Vendor extends Authenticatable
 		return $this->hasMany(vendor_timing::class)->where('open_timing','<', NOW())->where('close_timing','>', NOW())->where('day_name',$day)->where('day_status','1');
 	}
 	
+	
+	
 }

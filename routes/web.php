@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ReferandEarn;
+use App\Http\Controllers\UserController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -13,8 +15,15 @@ use App\Http\Controllers\AuthController;
 |
 */
 
-Route::get('/login', function () {
-    return view('welcome');
+Route::get('/', function () {
+    echo "Welcome to MarketPluss.";
 });
+
+
+Route::get('/send_mail', [UserController::class,'send_mail']);
+
+Route::get('/{refer_id}',[ReferandEarn::class,'genrateRequest']);
+
+
 
 // Route::get('login', [AuthController::class,'unauthorized']);

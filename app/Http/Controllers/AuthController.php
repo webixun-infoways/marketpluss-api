@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use App\Helpers\AppHelper;
 use App\Jobs\ProcessSms;
+use App\Models\refer_earn_setup;
 class AuthController extends Controller
 {
 	//method for contact verification 
@@ -29,16 +30,30 @@ class AuthController extends Controller
 		
 		$contact=$request->contact;
 		
-		$otp=rand(1000,9999);
-		//$otp=1234;
-		$msg="Use $otp. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
+		if(env("APP_DEBUG")) // condition to check this is beta or release
+		{
+			$otp=1234;
+			$msg="Use $otp. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
+			$data['contact']=$contact;
+			$data['msg']=$msg;
+		}
+		else
+		{
+			$otp=rand(1000,9999);
+			$msg="Use $otp. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
+			
+			$data['contact']=$contact;
+			$data['msg']=$msg;
 		
-		$data['contact']=$contact;
-		$data['msg']=$msg;
+			//AppHelper::send_sms2($data['contact'],$msg);
+			//jobs for end the sms 
+			ProcessSms::dispatch($data);
+		}
 		
-		//AppHelper::send_sms2($data['contact'],$msg);
-		//jobs for end the sms 
-		ProcessSms::dispatch($data);
+		
+		
+		// $request->header('User-Agent');
+		//return $request->ip();
 	
 		$otp=Hash::make($otp);
 		if($request->verification_type=='user')
@@ -79,7 +94,7 @@ class AuthController extends Controller
 		// $image_data= $obj->send_sms($contact,$msg);
 
 		$response['msg']='ok';
-		echo json_encode($response);
+		return json_encode($response);
 	}
 
 
@@ -115,6 +130,19 @@ class AuthController extends Controller
 
 			if($user->name == " " || $user->name == null)
 			{
+				//code for refer & earn plan
+				$getip = AppHelper::get_ip();
+				$getdevice = AppHelper::get_device();
+				$getos = $request->oprating_system;
+				
+				//apply refer and earn code 
+				
+				refer_earn_setup::where("user_ip_address",$getip)
+				->where("refer_status","pending")
+				->where("user_device","Mobile")
+				->where("user_os",ucwords($getos))
+				->update(['user_id' => $user->id,'refer_status'=>'register']);
+				
             	//now return this token on success login attempt
 				$response = ['msg' => 'ok','token' => $user->access_token,'user_type' => 'register','usr' => $user->id];
 			}
@@ -179,6 +207,35 @@ class AuthController extends Controller
 	public function unauthorized()
 	{
 		return response()->json(['error' => 'Unauthorized Access!'], 401);
+	}
+	
+	public function validate_upi_id(Request $request)
+	{
+		$validator = Validator::make($request->all(), [ 
+            'upi_id' => 'required'
+        ]);
+		
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+		
+		
+		
+		$upi_id=$request->upi_id;
+		$data="";
+		if ($data == "")
+		{
+			$response['status']=true;
+			$response['data']=$upi_id;
+		}
+		else
+		{
+			$response['status']=true;
+			$response['msg']="Invalid UPI, Try Again";
+		}
+		
+		return json_encode($response);
 	}
 
 }
