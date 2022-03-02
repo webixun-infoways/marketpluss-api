@@ -134,7 +134,7 @@ Route::middleware('auth:vendor-api')->group(function () {
 	Route::post('delete_feed_comment_vendor', [FeedController::class,'delete_feed_comment']);
 	Route::post('update_status_product_offer', [VendorController::class,'update_status_product_offer']);
 	 Route::post('get_vendor_offers_vendor', [VendorController::class,'get_vendor_offers_vendor']);
-	 
+	Route::post('vendorReviewsRating',[VendorController::class,'vendorReviewsRating']); 
 	  Route::post('get_single_feed_vendor',[FeedController::class,'get_single_feed']);
 	  
     Route::post('logout_vendor', [AuthController::class,'logout']);
