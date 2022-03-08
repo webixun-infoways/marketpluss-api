@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use App\Jobs\ProcessPush;
 use App\Http\Controllers\UserTransactionController;
+use App\Http\Controllers\GlobalController;
+
 class FeedController extends Controller
 {
     public function delete_feed(Request $request){
@@ -80,22 +82,57 @@ class FeedController extends Controller
         if($feed->save())
         {
             $response['status']=true;
-
-            if($files=$request->file('feed_file')){
+			$files=$request->file('feed_file');
+            if(is_array($files)){
                 $data=array();
                foreach($files as $file){
+                   //create unique name of file uploaded.
                     
-                    $path="feeds";
-                     //create unique name of file uploaded.
-                    $name=time().'_'.$file->getClientOriginalName();
-                    
-                    if($file->move($path,$name))
-                    {
-                        $data[] = ['feed_id'=>$feed->id, 'content_src'=> $path."/".$name,'content_type' => 'image'];
-                    }
-               }
+					$globalclass=new GlobalController();
+					$path = 'feed_img/';
+				
+						$res=$globalclass->upload_img($file,$path);
+				
+						if(!$res['status'])
+						{
+							$response['status']=false;
+							$response['msg']="Not Updated";
+							return json_encode($response);
+						}
+						else
+						{
+							$link = $res['file_name'];
+							  $data[] = ['feed_id'=>$feed->id, 'content_src'=> $link,'content_type' => 'image'];
+						}
+				}
 
-                if(feed_content::insert($data))
+               
+            }
+			else
+			{
+				 //create unique name of file uploaded.
+                 
+                    
+					$globalclass=new GlobalController();
+					$path = 'feed_img/';
+				
+						$res=$globalclass->upload_img($files,$path);
+				
+						if(!$res['status'])
+						{
+							$response['status']=false;
+							$response['msg']="Not Updated";
+							return json_encode($response);
+						}
+						else
+						{
+							$link = $res['file_name'];
+							  $data[] = ['feed_id'=>$feed->id, 'content_src'=> $link,'content_type' => 'image'];
+						}
+			}
+			
+			
+			 if(feed_content::insert($data))
                 {
                     $response['status']=true;
                     $response['msg']="Category Successfully Updated!";
@@ -105,7 +142,6 @@ class FeedController extends Controller
                     $response['status']=false;
                     $response['msg']="Category could not be updated!";
                 }
-            }
 			
 		    $user_id=Auth::user()->id;
 			$last_added_data=Feed::with('feed_content')
@@ -133,7 +169,7 @@ class FeedController extends Controller
             $response['msg']="Not Updated";
         }
 
-        echo json_encode($response); 
+        echo json_encode($response,JSON_UNESCAPED_SLASHES); 
     }
 
 

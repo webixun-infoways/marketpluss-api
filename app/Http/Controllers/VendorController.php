@@ -23,6 +23,7 @@ use App\Models\vendor_timing;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
+use Storage;
 class VendorController extends Controller
 {
     public function get_vendor_data(Request $request)
@@ -148,7 +149,7 @@ class VendorController extends Controller
          $validator = Validator::make($request->all(), [ 
              'name' => 'required', 
              'email' => 'nullable|email',
-             'shop_name'=>'required',
+             //'shop_name'=>'required',
 			 'description'=>'required'
          ]);
  
@@ -163,7 +164,7 @@ class VendorController extends Controller
 		{
 			$str_result = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz'; 
 			
-			$name=substr(str_replace(' ', '',$request->shop_name), 0, 4); 
+			$name=substr(str_replace(' ', '',$request->name), 0, 4); 
 			//return $name;
 			$rand= substr(str_shuffle($str_result), 0, 6); 
 			$user->share_code =strtoupper($name.$rand);
@@ -172,7 +173,7 @@ class VendorController extends Controller
          $user=vendor::find($vendor_id);
          $user->name=$request->name;
          $user->email=$request->email;
-         $user->shop_name=$request->shop_name;
+         $user->shop_name=$request->name;
 		 $user->description=$request->description;
 		 
          if($user->save())
@@ -204,32 +205,41 @@ class VendorController extends Controller
          if($request->hasFile('update_profile_picture'))
          {
              $pic=$request->file('update_profile_picture');
- 
-             $path="shop_pic";
- 
-             //create unique name of file uploaded.
-             $name=time().'_'.$pic->getClientOriginalName();
-             if($pic->move($path,$name))
+			
+			$current_pic=Auth::user()->profile_pic;
+			
+			//code for delete the file from storage
+			$nf= str_replace(env('APP_CDN_URL'),'',$current_pic);
+			Storage::disk(env('DEFAULT_STORAGE'))->delete($nf);
+			
+			//object to upload the file
+			$globalclass=new GlobalController();
+			$path="shop_pic/";
+			
+			$res=$globalclass->upload_img($pic,$path);
+			   
+             if(!$res['status'])
              {
-                $vendor_id=Auth::user()->id;
+                  $response['status']=false;
+                 $response['msg']="Profile could not be updated!";
+             }
+             else{
+				 $name=$res['file_name'];
+				 $vendor_id=Auth::user()->id;
                 $user=vendor::find($vendor_id);
-                $user->profile_pic=$path."/".$name;
+                $user->profile_pic=$res['file_name'];
                 
                 if($user->save())
                 {
                     $response['status']=true;
-                    $response['profile_pic']=$path."/".$name;
+                    $response['profile_pic']=$res['file_name'];
                 }
                 else
                 {
                     $response['status']=false;
                     $response['msg']="Profile could not be updated!";
                 }
-             }
-             else{
-                 $response['status']=false;
-                 $response['msg']="Profile could not be updated!";
-             }
+            }
       
          }
          else{
@@ -258,22 +268,24 @@ class VendorController extends Controller
          {
              $pic=$request->file('cover_picture');
  
-             $path="shop_pic/";
- 
-             //create unique name of file uploaded.
-             $name=time().'_'.$pic->getClientOriginalName();
-             if($pic->move($path,$name))
-             {
+             $globalclass=new GlobalController();
+			$path="shop_pic/";
+			
+			$res=$globalclass->upload_img($pic,$path);
+			
+             if($res['status'])
+             {	
+				$name=$res['file_name'];
                 $vendor_id=Auth::user()->id;
                 $user= new vendor_cover;
-                $user->image=$path."/".$name;
+                $user->image=$name;
                 $user->vendor_id=$vendor_id;
                 $user->status='active';
 
                 if($user->save())
                 {
                     $response['status']=true;
-                    $response['profile_pic']=$path."/".$name;
+                    $response['profile_pic']=$name;
                 }
                 else
                 {
@@ -527,12 +539,14 @@ class VendorController extends Controller
          {
              $pic=$request->file('product_img');
              $path="products/";
- 
-             //create unique name of file uploaded.
-             $name=time().'_'.$pic->getClientOriginalName();
-             if($pic->move($path,$name))
+				
+			$globalclass=new GlobalController();
+			
+			$res=$globalclass->upload_img($pic,$path);
+			
+             if($res['status'])
              {
-                $path=$path."/".$name;
+                $path=$res['file_name'];
 
                 $v_product=new Vendor_Product;
                 $v_product->product_name=$request->product_name;
@@ -608,13 +622,16 @@ class VendorController extends Controller
          if($request->hasFile('product_img'))
          {
              $pic=$request->file('product_img');
-             $path="products";
+             $path="products/";
  
-             //create unique name of file uploaded.
-             $name=time().'_'.$pic->getClientOriginalName();
-             if($pic->move($path,$name))
+              $globalclass=new GlobalController();
+		
+			
+			$res=$globalclass->upload_img($pic,$path);
+			
+             if($res['status'])
              {
-                $path=$path."/".$name;
+                $path=$res['file_name'];
 
                 $v_product= Vendor_Product::find($request->product_id);
                 $v_product->product_name=$request->product_name;
@@ -896,13 +913,13 @@ class VendorController extends Controller
 		//return $dd;
 		
 		 //fetch store details of vendor
-        $store_data=Vendor::with('covers')->with('today_timing')->where('id','=',$request->vendor_id)->
+        $store_data=Vendor::with('covers:image,vendor_id')->with('today_timing')->where('id','=',$request->vendor_id)->
 		addSelect(['vendor_follow' =>Vendors_Subsciber::select('vendor_id')->whereColumn('vendor_id', 'vendors.id')->where('user_id',$user_id)])->selectRaw("{$haversine} AS distance")->get();
 
         //$distance=Vendor::get();
 		//return $distance;
         
-        // echo $store_data;
+        //return $store_data;
         // exit;
         if($store_data!=null)
         {
@@ -994,6 +1011,7 @@ class VendorController extends Controller
 	
     public function get_vendor_product(Request $request)
     {
+		//return $request;
         $validator = Validator::make($request->all(), [ 
             'vendor_category_id' => 'required',
             'product_type'=>'required'
@@ -1007,22 +1025,22 @@ class VendorController extends Controller
         if($request->vendor_category_id != 0 && $request->product_type == 'product')
         {
              //fetch store details of vendor
-             $store_data=Vendor_Product::where('vendor_category_id',$request->vendor_category_id)->whereIn('status',['active','inactive'])->get();
+             $store_data=Vendor_Product::with('favourite')->where('vendor_category_id',$request->vendor_category_id)->whereIn('status',['active','inactive'])->get();
         }
         else if($request->vendor_category_id == 0 && $request->product_type == 'product')
         {    
             //fetch store details of vendor
-            $store_data=Vendor_Product::where('type',$request->product_type)->whereIn('status',['active','inactive'])->get();
+            $store_data=Vendor_Product::with('favourite')->where('type',$request->product_type)->whereIn('status',['active','inactive'])->get();
         }
         else if($request->vendor_category_id != 0 && $request->product_type == 'package')
         {    
             //fetch store details of vendor
-            $store_data=Vendor_Product::where('type',$request->product_type)->whereIn('status',['active','inactive'])->get();
+            $store_data=Vendor_Product::with('favourite')->where('type',$request->product_type)->whereIn('status',['active','inactive'])->get();
         }
         else
         {    
             //fetch store details of vendor
-            $store_data=Vendor_Product::where('type',$request->product_type)->whereIn('status',['active','inactive'])->get();
+            $store_data=Vendor_Product::with('favourite')->where('type',$request->product_type)->whereIn('status',['active','inactive'])->get();
         }
         
         

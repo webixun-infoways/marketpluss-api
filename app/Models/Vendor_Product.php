@@ -9,4 +9,8 @@ class Vendor_Product extends Model
 {
     use HasFactory;
     protected $table="vendor_products";
+	
+	public function favourite(){
+		return $this->hasOne(user_product_saves::class,'product_id');
+	}
 }

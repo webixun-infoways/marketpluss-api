@@ -55,20 +55,22 @@ class UserController extends Controller
 	
 	public function vendor_rating(Request $request)
 	{
+		//return $request;
 		$validator = Validator::make($request->all(), [ 
             'rating' => 'required', 
-            'vendor_id' => 'required'
+            'vendor_id' => 'required',
+			'review' => 'nullable',
         ]);
 
 		if ($validator->fails())
     	{
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
-		
+		$user_id = Auth::user()->id;
 		$vr=new vendor_rating;
-		
+		//return Auth::user()->id;
 		$vr->vendor_id=$request->vendor_id;
-		$vr->user_id =	Auth::user()->id;
+		$vr->user_id =	$user_id;
 		$vr->vendor_rating =	$request->rating;
 		$vr->vendor_review =	$request->review;
 		$vr->review_status = 'success';
@@ -81,7 +83,7 @@ class UserController extends Controller
 			//Point credit to Vendor
 	        $permission->credit_coin($request->vendor_id,'12345',$coin[0]->review_point,'Success','UPI');
 			//Point credit to User
-			$permission->credit_coin(Auth::user()->id,'12345',$coin[0]->review_point,'Success','UPI');
+			$permission->credit_coin($user_id,'12345',$coin[0]->review_point,'Success','UPI');
 			
 			$heading_user= "Cashback Initialted for feed review";
 			$heading_vendor= "Your Feed Just Reviewd";
@@ -119,7 +121,7 @@ class UserController extends Controller
 		}
 		else
 		{
-			$response['status']=true;
+			$response['status']=false;
 		$response['msg']="No data found.";
 		}
 		
@@ -129,7 +131,7 @@ class UserController extends Controller
 	
 	public function get_vendor_reviews(Request $request)
 	{
-		return $request;
+		//return $request;
 		$validator = Validator::make($request->all(), [ 
             'vendor_id' => 'required'
         ]);
@@ -146,7 +148,12 @@ class UserController extends Controller
 		//$vr=vendor_rating::selectRaw('*,count(vendor_ratings.*')->where('vendor_ratings.vendor_id',$vendor_id)->get();
 
 		
-		$rating_per=vendor_rating::selectRaw('count(vendor_rating)/'.$total_rating.' as percentage,vendor_rating')->where('vendor_id',$vendor_id)->groupBy('vendor_rating')->orderBy('vendor_rating')->get();
+		$rating_per=vendor_rating::selectRaw('count(vendor_rating)/'.$total_rating.' as percentage,vendor_rating')
+		->where('vendor_id',$vendor_id)
+		->groupBy('vendor_rating')
+		->orderBy('vendor_rating')
+		->get();
+		//return $rating_per;
 		//$vr=vendor_rating::selectRaw('count(*) as cc')->addSelect(['rate1' =>vendor_rating::selectRaw('count(*)/cc')->whereColumn('vendor_id', 'vendor_ratings.vendor_id')->where('vendor_rating',5)])->where('vendor_ratings.vendor_id',$vendor_id)->get();
 		
 		if(count($vr)>0)
@@ -157,10 +164,10 @@ class UserController extends Controller
 		}
 		else
 		{
-			$response['status']=true;
+			$response['status']=false;
 		$response['msg']="No data found.";
 		}
-		
+		return $response;
 		return json_encode($response,JSON_UNESCAPED_SLASHES);
 	}
 	
@@ -168,14 +175,18 @@ class UserController extends Controller
 	public function get_earn_data()
 	{
 		$data=refer_earn_setup::all();
+		$ref = DB::table('refer_earn_setups')->get();
 		$data2=point_level::all();
 		$data['wallet']=Auth::user()->wallet;
+		$data['referrer'] = $ref[0]->referrer;
 		$data['upi']=Auth::user()->upi_id;
 		$data['share_code']=Auth::user()->share_code;
 		$response['status']=true;
 		$response['data']=$data;
 		
 		$response['data2']=$data2;
+		
+		//return $response;
 		return json_encode($response,JSON_UNESCAPED_SLASHES);
 	}
 	
@@ -495,20 +506,23 @@ class UserController extends Controller
 			
             $pic=$request->file('update_profile_picture');
 
-            $path="profile_pic";
+            $path="profile_pic/";
 
-            //create unique name of file uploaded.
-            $name=time().'_'.$pic->getClientOriginalName();
-            if($pic->move($path,$name))
+             $globalclass=new GlobalController();
+			
+			$res=$globalclass->upload_img($pic,$path);
+			
+            if($res['status'])
             {
+				$name=$res['file_name'];
                 $user_id=Auth::user()->id;
                 $user=user::find($user_id);
-                $user->profile_pic=$path."/".$name;
+                $user->profile_pic=$name;
                 
                 if($user->save())
                 {
                     $response['status']=true;
-                    $response['profile_pic']=$path."/".$name;
+                    $response['profile_pic']=$name;
                 }
                 else
                 {
@@ -557,7 +571,7 @@ class UserController extends Controller
 		
 		if($request->sort_by == 'nearby')
 		{
-			$data=Vendor::with('offers')->with('today_timing')
+		$data=Vendor::with('offers')->with('today_timing')->with('favourite')
 		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating')
 		->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
@@ -568,7 +582,7 @@ class UserController extends Controller
 		}
 		if($request->sort_by == 'high_to_low'){
 		
-		$data=Vendor::with('offers')->with('today_timing')
+		$data=Vendor::with('offers')->with('today_timing')->with('favourite')
 		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating')
 		->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
@@ -579,7 +593,7 @@ class UserController extends Controller
 		
 			
 		}else if($request->sort_by == 'low_to_high'){
-				$data=Vendor::with('offers')->with('today_timing')
+				$data=Vendor::with('offers')->with('today_timing')->with('favourite')
 		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating')
 		->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
         $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);

@@ -20,7 +20,7 @@ use App\Jobs\ProcessPush;
 
 class UserTransactionController extends Controller
 {
-    public function credit_coin($user_id,$comment,$txn_amount,$txn_status,$txn_type){
+    public function credit_coin($user_id,$txn_id,$txn_amount,$txn_status,$txn_type){
 	   $amount = user_txn_log::where('user_id',$user_id)->whereDate('created_at', DB::raw('CURDATE()'))->sum('txn_amount');
 	   $max_amount_per_day = point_level::get('max_point_per_day');
 	   if($max_amount_per_day[0]->max_point_per_day > $amount){
@@ -30,7 +30,8 @@ class UserTransactionController extends Controller
 		   $res->txn_amount = $txn_amount;
 		   $res->txn_status = $txn_status;
 		   $res->txn_type = $txn_type;
-		   $res->comment=$comment;
+		   //$res->comment=$comment;
+		   $res->comment="Credit";
 		   $res->save();
 		   if($res->save()){
 			   //update user wallet
