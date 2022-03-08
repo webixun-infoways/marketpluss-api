@@ -67,6 +67,7 @@ class UserController extends Controller
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
 		$user_id = Auth::user()->id;
+		$user_name = Auth::user()->name;
 		$vr=new vendor_rating;
 		//return Auth::user()->id;
 		$vr->vendor_id=$request->vendor_id;
@@ -81,13 +82,15 @@ class UserController extends Controller
 			$permission=new UserTransactionController();
 			$coin = point_level::get();
 			//Point credit to Vendor
-	        $permission->credit_coin($request->vendor_id,'12345',$coin[0]->review_point,'Success','UPI');
+	       // $permission->credit_coin($request->vendor_id,'12345',$coin[0]->review_point,'Success','UPI');
+		   
+		   $heading_user= $coin[0]->review_point." MP Coins has been initialted fo review";
 			//Point credit to User
-			$permission->credit_coin($user_id,'12345',$coin[0]->review_point,'Success','UPI');
+			$permission->credit_coin($user_id,$heading_user,$coin[0]->review_point,'success','credit');
 			
-			$heading_user= "Cashback Initialted for feed review";
-			$heading_vendor= "Your Feed Just Reviewd";
-		    $post_url="https://marketpluss.com/";
+			
+			$heading_vendor= $user_name." gives you a rating";
+		    $post_url=" ";
 			//Notification to User
 		    ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
 			//Notification to vendor

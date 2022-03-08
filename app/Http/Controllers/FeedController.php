@@ -159,7 +159,7 @@ class FeedController extends Controller
 			$permission=new UserTransactionController();
 			$coin = point_level::get();
 	        
-			$heading_user= "Cashback Initialted Into Your Account!";
+			$heading_user= $coin[0]->feed_points." MP Coins has been initialted Inio your account!";
 			$permission->credit_coin($user_id,$heading_user,$coin[0]->feed_points,'success','credit');
 		    $post_url="https://marketpluss.com/";
 		    ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
