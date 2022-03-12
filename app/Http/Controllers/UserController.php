@@ -60,6 +60,7 @@ class UserController extends Controller
             'rating' => 'required', 
             'vendor_id' => 'required',
 			'review' => 'nullable',
+			'review_type' => 'nullable',
         ]);
 
 		if ($validator->fails())
@@ -75,9 +76,17 @@ class UserController extends Controller
 		$vr->vendor_rating =	$request->rating;
 		$vr->vendor_review =	$request->review;
 		$vr->review_status = 'success';
-		
+		$vr->review_count = 'yes';
+		//It is checked for it comes from scan or any other mode
+		$vr->review_from = $request->review_type;
+		$res = vendor_rating::where('vendor_id',$request->vendor_id)->where('user_id',$user_id)->update(['review_count'=>'no']);
 		try{
-			$vr->save();
+			if($vr->save()){
+				
+				$res = Vendor::where('id',$request->vendor_id)
+				->update(['current_rating'=> vendor_rating::where('vendor_id',$request->vendor_id)->where('review_count','yes')->avg('vendor_rating')]);
+				
+			}
 			//Cashback Initiated
 			$permission=new UserTransactionController();
 			$coin = point_level::get();
@@ -231,13 +240,13 @@ class UserController extends Controller
     {
        
 		
-		if(isset($request->category_id))
+		if($request->category_id != 0)
 		{
 			 $category= $category=Category::where('parent_id',$request->category_id)->where('status','Active')->get();
 		}else{
 			 $category=Category::where('status','Active')->where('parent_id',0)->get();
 		}
-       
+       //return $category;
        
         $response['data']=$category;
 

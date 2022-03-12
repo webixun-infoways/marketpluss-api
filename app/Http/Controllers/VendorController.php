@@ -26,6 +26,37 @@ use Illuminate\Support\Facades\Crypt;
 use Storage;
 class VendorController extends Controller
 {
+	public function edit_category(Request $request){
+	    $validator = Validator::make($request->all(), [ 
+	       'category_id'=> 'required',
+		   'name'=>'required'
+        ]);
+		 
+		if ($validator->fails())
+        {
+           return response(['errors'=>$validator->errors()->all()], 422);
+        }
+		
+		$vendor_id=Auth::user()->id;
+		//return $vendor_id;
+		
+		$res = Vendor_category::find($request->category_id);
+		if($res->vendor_id == $vendor_id){
+			$res->name = $request->name;
+			if($res->save()){
+				$response['status']=true;
+                $response['msg']="Category Updated!";
+			}else{
+				$response['status']=false;
+                $response['msg']="Something went wrong!";
+			}
+		}else{
+            $response['status']=false;
+            $response['msg']="You don't have access to perforn this action!";
+		}
+		
+    return json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
     public function get_vendor_data(Request $request)
     {
         $vendor_id=Auth::user()->id;
