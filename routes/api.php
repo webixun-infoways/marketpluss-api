@@ -98,7 +98,7 @@ Route::middleware('auth:api')->group(function () {
 Route::middleware('auth:vendor-api')->group(function () {
 	Route::post('update_store_timing', [VendorController::class,'update_store_timing']);
 	Route::post('get_store_timing', [VendorController::class,'get_store_timing']);
-		
+    Route::post('edit_category', [VendorController::class,'edit_category']);
 	Route::post('fetch_vendor_notification', [VendorController::class,'fetch_vendor_notification']);
 	Route::post('get_user_feeds_vendor', [FeedController::class,'user_feed_view']);
 	Route::post('delete_feed_vendor', [FeedController::class,'delete_feed']);

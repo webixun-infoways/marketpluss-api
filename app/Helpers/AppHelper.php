@@ -33,7 +33,7 @@ class AppHelper
 	  public static function send_Push($heading,$url,$user_type,$subscriber,$desc)
       {
 		$content      = array(
-        "en" => 'English Message'
+        "en" => 'Tap here to view'
 		);
 		
 		$heading = array(
