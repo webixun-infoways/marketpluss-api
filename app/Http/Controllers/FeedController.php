@@ -13,6 +13,7 @@ use App\Models\Vendor;
 use App\Models\point_level;
 use App\Models\Vendor_Product;
 use App\Models\Vendors_Subsciber;
+use App\Models\user_txn_log;
 use App\Models\Vendor_category;
 use App\Models\Feed_Comment;
 use App\Models\Feed;
@@ -59,7 +60,6 @@ class FeedController extends Controller
     //function for feed likes
     public function add_feed(Request $request)
     {
-		//return $request;
         $validator = Validator::make($request->all(), [ 
             //'title' => 'required', 
             'description'=>'required',
@@ -158,11 +158,14 @@ class FeedController extends Controller
 			//Cashback Initiated
 			$permission=new UserTransactionController();
 			$coin = point_level::get();
-	        
-			$heading_user= $coin[0]->feed_points." MP Coins has been initialted Inio your account!";
-			$permission->credit_coin($user_id,$heading_user,$coin[0]->feed_points,'success','credit');
-		    $post_url="https://marketpluss.com/";
-		    ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
+			$today_earning = user_txn_log::where('user_id',Auth::user()->id)->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
+			if($today_earning <= $coin->max_point_per_day){
+				$heading_user= $coin[0]->feed_points." MP Coins has been initialted Inio your account!";
+				$permission->credit_coin($user_id,$heading_user,$coin[0]->feed_points,'success','credit');
+				$post_url="https://marketpluss.com/";
+				ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
+			}
+			
         }
         else{
             $response['status']=false;
@@ -659,7 +662,7 @@ class FeedController extends Controller
         }
         else{
             $response['status']=false;
-                $response['msg']="not updated";
+            $response['msg']="not updated";
         }
         return json_encode($response);
     }

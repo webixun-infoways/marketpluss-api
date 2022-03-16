@@ -1163,27 +1163,41 @@ class VendorController extends Controller
 		//confitions for check all the users
         if($vendor_id != 0)
         {
-			$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->selectRaw("{$haversine} AS distance")->where('vendor_offers.vendor_id',$vendor_id)->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(10);
+			
+			$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')
+			->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
+			->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
+			->selectRaw("{$haversine} AS distance")
+			->where('vendor_offers.vendor_id',$vendor_id)
+			->where('vendor_offers.status','active')
+			->orderBy('distance')->paginate(10);
 		
         }
         else{
-
             if($request->category_id != 0)
             {
-				
                $cate_id=$request->category_id;
 				
 				$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')
+				->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
 				->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
 				->selectRaw("{$haversine} AS distance")->whereIn('vendors.id',function($q) use($cate_id){
                         $q->from('vendor_main_categories')->selectRaw('vendor_id')->where('category_id',$cate_id);
-                    })->having('distance','<','25')->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(10);
+                    })->having('distance','<','25')->where('vendor_offers.status','active')->orderBy('distance')->paginate(10);
             }
             else{
-				
-                $offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->selectRaw("{$haversine} AS distance")->having('distance','<','25')->where('vendor_offers.status','!=','delete')->orderBy('distance')->paginate(10);
+				//return "Hello";
+                $offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')
+				->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
+				->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
+				->selectRaw("{$haversine} AS distance")
+				->having('distance','<','25')
+				->where('vendor_offers.status','active')
+				->orderBy('distance')
+				->paginate(10);
 		
             }
+			return $offer_data;
         }
         
         
@@ -1229,7 +1243,7 @@ class VendorController extends Controller
        
 		//confitions for check all the users
 
-		$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->where('vendor_offers.id',$offer_id)->where('vendor_offers.status','!=','delete')->get();
+		$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->where('vendor_offers.id',$offer_id)->where('vendor_offers.status','!=','delete')->get();
 		foreach($offer_data as $key=>$o)
 		{
 			$offer_id=$o->offer_id;
@@ -1287,11 +1301,12 @@ class VendorController extends Controller
 	//fetch vendor_offers
 	 public function get_vendor_offers_vendor(Request $request)
     {
+		//return "Hello";
 		//return $request;
         $vendor_id=Auth::user()->id;
 		//return $vendor_id;
-		$offer_data=Vendor_Offer::where('vendor_id',$vendor_id)->where('status','!=','delete')->get();
-		
+		$offer_data=Vendor_Offer::where('vendor_id',$vendor_id)->whereDate('start_to','>=',date('Y-m-d'))->where('status','!=','delete')->get();
+		return $offer_data;
 		foreach($offer_data as $key=>$o)
 		{
 			$offer_id=$o->id;

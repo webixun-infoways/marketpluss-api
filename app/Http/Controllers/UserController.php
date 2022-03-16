@@ -22,6 +22,7 @@ use App\Models\Vendor_cover;
 use App\Models\Category;
 use App\Models\user_product_saves;
 use App\Models\refer_earn_setup;
+use App\Models\user_refer_log;
 use App\Models\point_level;
 use App\Models\user_fev_vendors;
 use Illuminate\Support\Facades\Auth;
@@ -56,6 +57,9 @@ class UserController extends Controller
 	public function vendor_rating(Request $request)
 	{
 		//return $request;
+		//Cashback Initiated
+		
+		
 		$validator = Validator::make($request->all(), [ 
             'rating' => 'required', 
             'vendor_id' => 'required',
@@ -77,33 +81,83 @@ class UserController extends Controller
 		$vr->vendor_review =	$request->review;
 		$vr->review_status = 'success';
 		$vr->review_count = 'yes';
+		
 		//It is checked for it comes from scan or any other mode
 		$vr->review_from = $request->review_type;
 		$res = vendor_rating::where('vendor_id',$request->vendor_id)->where('user_id',$user_id)->update(['review_count'=>'no']);
 		try{
+			$permission=new UserTransactionController();
 			if($vr->save()){
 				
 				$res = Vendor::where('id',$request->vendor_id)
 				->update(['current_rating'=> vendor_rating::where('vendor_id',$request->vendor_id)->where('review_count','yes')->avg('vendor_rating')]);
 				
 			}
-			//Cashback Initiated
-			$permission=new UserTransactionController();
-			$coin = point_level::get();
-			//Point credit to Vendor
-	       // $permission->credit_coin($request->vendor_id,'12345',$coin[0]->review_point,'Success','UPI');
-		   
-		   $heading_user= $coin[0]->review_point." MP Coins has been initialted fo review";
 			//Point credit to User
-			$permission->credit_coin($user_id,$heading_user,$coin[0]->review_point,'success','credit');
+			$coin = point_level::get();
+			$check_user_rating_count = vendor_rating::where('user_id',$user_id)->count();
+			if($check_user_rating_count == 1){
+				//return "Hello";
+				 // $permission->credit_coin($request->vendor_id,'12345',$coin[0]->review_point,'Success','UPI');
+				$refer_amount = DB::table('refer_earn_setups')->get();
+				$today_earning = user_txn_log::where('user_id',Auth::user()->id)->where('txn_status','success')->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
+				if($today_earning <= $coin[0]->max_point_per_day){
+					$heading_user= $refer_amount[0]->earner." MP Coins has been initialted fo review";
+					//Point credit to User
+					$permission->credit_coin($user_id,$heading_user,$refer_amount[0]->earner,'success','credit');
+					
+					
+					$heading_vendor= $user_name." gives you a rating";
+					$post_url=" ";
+					//Notification to User
+					ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
+					//Notification to vendor
+					ProcessPush::dispatch($heading_vendor,$post_url,$request->vendor_id,'vendor','');
+				}
+				
+				if($request->review_type == 'scan'){
+					$given_coin = ($refer_amount[0]->referrer/3);
+				}else{
+					$given_coin = $refer_amount[0]->referrer;
+				}
+				//return $given_coin;
+				$refer_by = user_refer_log::where('user_id',$user_id)->orderBy('id','ASC')->get();
+				//return $refer_by;
+				if(count($refer_by) == 1){
+					$heading_user= $given_coin." MP Coins has been initialted for review done by ".$user_name;
+					//Point credit to User
+					$permission->credit_coin($refer_by[0]->refer_id,$heading_user,$given_coin,'success','credit');
+					
+					
+					$heading_vendor= $user_name." gives you a rating";
+					$post_url=" ";
+					//Notification to User
+					ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
+					//Notification to vendor
+					ProcessPush::dispatch($heading_vendor,$post_url,$request->vendor_id,'vendor','');
+				}
+			}else{
+				//return "NO";
+				
+				 // $permission->credit_coin($request->vendor_id,'12345',$coin[0]->review_point,'Success','UPI');
+				$today_earning = user_txn_log::where('user_id',Auth::user()->id)->where('txn_status','success')->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
+				//return $today_earning;
+				if($today_earning <= $coin[0]->max_point_per_day){
+					$heading_user= $coin[0]->review_point." MP Coins has been initialted fo review";
+					//Point credit to User
+					$permission->credit_coin($user_id,$heading_user,$coin[0]->review_point,'success','credit');
+					
+					
+					$heading_vendor= $user_name." gives you a rating";
+					$post_url=" ";
+					//Notification to User
+					ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
+					//Notification to vendor
+					ProcessPush::dispatch($heading_vendor,$post_url,$request->vendor_id,'vendor','');
+				}
+			}
 			
-			
-			$heading_vendor= $user_name." gives you a rating";
-		    $post_url=" ";
-			//Notification to User
-		    ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
-			//Notification to vendor
-			ProcessPush::dispatch($heading_vendor,$post_url,$request->vendor_id,'vendor','');
+		  
 			
 			$response['status']=true;
 			$response['msg']="successfully submited";
@@ -470,7 +524,7 @@ class UserController extends Controller
     	}
         
         $user_id=Auth::user()->id;
-		
+		//return $user_id;
         $user=User::find($user_id);
 		
 		if(isset($request->update_type))
