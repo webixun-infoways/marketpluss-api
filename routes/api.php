@@ -14,7 +14,7 @@ use App\Http\Controllers\UserTransactionController;
 Route::get('fetch_home_sliders', [UserController::class,'fetch_home_sliders']);
 Route::get('get_category_vendor', [VendorController::class,'get_category_vendor']);
 
-Route::get('fetch_home_data', [HomeController::class,'fetch_home_data']);
+
 Route::get('get_all_category', [UserController::class,'get_all_category']);
 Route::get('send_mail', [UserController::class,'send_mail']);
 //auth related routes
@@ -36,8 +36,8 @@ Route::post('valiate_upi_id',[AuthController::class,'validate_upi_id']);
 
 //condition  for protect the user route
 Route::middleware('auth:api')->group(function () {
-	
-	 Route::post('fetch_user_notification', [UserController::class,'fetch_user_notification']);
+	Route::get('fetch_home_data', [HomeController::class,'fetch_home_data']);
+	Route::post('fetch_user_notification', [UserController::class,'fetch_user_notification']);
 	   
     // User Profile related routes
     Route::post('update_profile', [UserController::class,'update_profile']);
