@@ -133,7 +133,7 @@ class UserController extends Controller
 					$post_url=" ";
 					//Notification to User
 					ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
-					//Notification to vendor
+					//Notification to vendors
 					ProcessPush::dispatch($heading_vendor,$post_url,$request->vendor_id,'vendor','');
 				}
 			}else{
