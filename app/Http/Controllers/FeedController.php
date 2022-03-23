@@ -160,7 +160,7 @@ class FeedController extends Controller
 			$coin = point_level::get();
 			$today_earning = user_txn_log::where('user_id',Auth::user()->id)->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
 			if($today_earning <= $coin->max_point_per_day){
-				$heading_user= $coin[0]->feed_points." MP Coins has been initialted Inio your account!";
+				$heading_user= $coin[0]->feed_points." MP Coins has been initiated Inio your account!";
 				$permission->credit_coin($user_id,$heading_user,$coin[0]->feed_points,'success','credit');
 				$post_url="https://marketpluss.com/";
 				ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
@@ -191,6 +191,7 @@ class FeedController extends Controller
 
         if($request->type=='yes')
         {
+			Feed_like::where('feed_id',$request->feed_id)->where('user_id',Auth::user()->id)->delete();
             $feed=new Feed_like;
             $feed->user_id=Auth::user()->id;
             $feed->feed_id=$request->feed_id;
@@ -600,6 +601,7 @@ class FeedController extends Controller
 
         if($request->type=='save')
         {
+			Feed_Save::where('feed_id',$request->feed_id)->where('user_id',Auth::user()->id)->delete();
             $feed=new Feed_Save;
             $feed->user_id=Auth::user()->id;
             $feed->feed_id=$request->feed_id;

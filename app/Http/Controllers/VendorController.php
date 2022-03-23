@@ -1306,7 +1306,7 @@ class VendorController extends Controller
         $vendor_id=Auth::user()->id;
 		//return $vendor_id;
 		$offer_data=Vendor_Offer::where('vendor_id',$vendor_id)->whereDate('start_to','>=',date('Y-m-d'))->where('status','!=','delete')->get();
-		return $offer_data;
+		
 		foreach($offer_data as $key=>$o)
 		{
 			$offer_id=$o->id;

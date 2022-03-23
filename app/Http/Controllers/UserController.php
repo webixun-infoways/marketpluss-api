@@ -102,7 +102,7 @@ class UserController extends Controller
 				$refer_amount = DB::table('refer_earn_setups')->get();
 				$today_earning = user_txn_log::where('user_id',Auth::user()->id)->where('txn_status','success')->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
 				if($today_earning <= $coin[0]->max_point_per_day){
-					$heading_user= $refer_amount[0]->earner." MP Coins has been initialted fo review";
+					$heading_user= $refer_amount[0]->earner." MP Coins has been initiated for review";
 					//Point credit to User
 					$permission->credit_coin($user_id,$heading_user,$refer_amount[0]->earner,'success','credit');
 					
@@ -124,7 +124,7 @@ class UserController extends Controller
 				$refer_by = user_refer_log::where('user_id',$user_id)->orderBy('id','ASC')->get();
 				//return $refer_by;
 				if(count($refer_by) == 1){
-					$heading_user= $given_coin." MP Coins has been initialted for review done by ".$user_name;
+					$heading_user= $given_coin." MP Coins has been initiated for review done by ".$user_name;
 					//Point credit to User
 					$permission->credit_coin($refer_by[0]->refer_id,$heading_user,$given_coin,'success','credit');
 					
@@ -143,7 +143,7 @@ class UserController extends Controller
 				$today_earning = user_txn_log::where('user_id',Auth::user()->id)->where('txn_status','success')->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
 				//return $today_earning;
 				if($today_earning <= $coin[0]->max_point_per_day){
-					$heading_user= $coin[0]->review_point." MP Coins has been initialted fo review";
+					$heading_user= $coin[0]->review_point." MP Coins has been initiated fo review";
 					//Point credit to User
 					$permission->credit_coin($user_id,$heading_user,$coin[0]->review_point,'success','credit');
 					
@@ -732,6 +732,7 @@ class UserController extends Controller
 		
 		 if($request->type=='yes')
         {
+			Vendors_Subsciber::where('vendor_id',$request->vendor_id)->where('user_id',Auth::user()->id)->delete();
             $feed=new Vendors_Subsciber;
             $feed->user_id=Auth::user()->id;
             $feed->vendor_id=$request->vendor_id;

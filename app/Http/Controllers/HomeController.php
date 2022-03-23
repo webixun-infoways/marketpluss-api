@@ -14,18 +14,6 @@ class HomeController extends Controller
 {
     
 	 public function fetch_home_data(Request $request){
-		$user = Auth::user()->id;
-		$udata = User::find($user);
-		$haversine = "(6371 * acos(cos(radians(" . $udata->location_lati . ")) 
-        * cos(radians(`shop_latitude`)) 
-        * cos(radians(`shop_longitude`) 
-        - radians(" . $udata->location_long . ")) 
-        + sin(radians(" . $udata->location_lati . ")) 
-        * sin(radians(`shop_latitude`))))";
-		$nearby_vendor = Vendor::select(['name','email','contact','description'])
-		->selectRaw("{$haversine} AS distance")
-		->get();
-		//return $uda;
 		
         //return $haversine;
         $home_data=home_tab_controller::with('fetch_content')->where('status','active')->orderBy('sort_by','ASC')
@@ -35,7 +23,6 @@ class HomeController extends Controller
         {
             $response['status']=true;
             $response['data']=$home_data;
-			$response['nearby_vendor']=$nearby_vendor;
         }
         else{
             $response['status']=false;
