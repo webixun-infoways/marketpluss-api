@@ -24,7 +24,7 @@ Route::post('otp-verification', [AuthController::class,'otp_verification']);
 
 Route::get('unauthorizeds', [AuthController::class,'unauthorized']);
 Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
-
+Route::get('fetch_home_data', [HomeController::class,'fetch_home_data']);
 Route::post('get_single_feed', [FeedController::class,'get_single_feed']);
 //Route Faq Controller
 // Route::post('add_faq', [FaqController::class,'add_faq']);
@@ -36,7 +36,7 @@ Route::post('valiate_upi_id',[AuthController::class,'validate_upi_id']);
 
 //condition  for protect the user route
 Route::middleware('auth:api')->group(function () {
-	Route::get('fetch_home_data', [HomeController::class,'fetch_home_data']);
+	
 	Route::post('fetch_user_notification', [UserController::class,'fetch_user_notification']);
 	   
     // User Profile related routes

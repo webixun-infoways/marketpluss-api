@@ -102,7 +102,7 @@ class UserController extends Controller
 				$refer_amount = DB::table('refer_earn_setups')->get();
 				$today_earning = user_txn_log::where('user_id',Auth::user()->id)->where('txn_status','success')->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
 				if($today_earning <= $coin[0]->max_point_per_day){
-					$heading_user= $refer_amount[0]->earner." MP Coins has been initialted fo review";
+					$heading_user= $refer_amount[0]->earner." MP Coins has been initiated for review";
 					//Point credit to User
 					$permission->credit_coin($user_id,$heading_user,$refer_amount[0]->earner,'success','credit');
 					
@@ -124,7 +124,7 @@ class UserController extends Controller
 				$refer_by = user_refer_log::where('user_id',$user_id)->orderBy('id','ASC')->get();
 				//return $refer_by;
 				if(count($refer_by) == 1){
-					$heading_user= $given_coin." MP Coins has been initialted for review done by ".$user_name;
+					$heading_user= $given_coin." MP Coins has been initiated for review done by ".$user_name;
 					//Point credit to User
 					$permission->credit_coin($refer_by[0]->refer_id,$heading_user,$given_coin,'success','credit');
 					
@@ -133,17 +133,14 @@ class UserController extends Controller
 					$post_url=" ";
 					//Notification to User
 					ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
-					//Notification to vendor
+					//Notification to vendors
 					ProcessPush::dispatch($heading_vendor,$post_url,$request->vendor_id,'vendor','');
 				}
 			}else{
-				//return "NO";
-				
-				 // $permission->credit_coin($request->vendor_id,'12345',$coin[0]->review_point,'Success','UPI');
 				$today_earning = user_txn_log::where('user_id',Auth::user()->id)->where('txn_status','success')->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
 				//return $today_earning;
 				if($today_earning <= $coin[0]->max_point_per_day){
-					$heading_user= $coin[0]->review_point." MP Coins has been initialted fo review";
+					$heading_user= $coin[0]->review_point." MP Coins has been initiated for review";
 					//Point credit to User
 					$permission->credit_coin($user_id,$heading_user,$coin[0]->review_point,'success','credit');
 					
@@ -233,7 +230,7 @@ class UserController extends Controller
 			$response['status']=false;
 		$response['msg']="No data found.";
 		}
-		return $response;
+		//return $response;
 		return json_encode($response,JSON_UNESCAPED_SLASHES);
 	}
 	
@@ -245,6 +242,7 @@ class UserController extends Controller
 		$data2=point_level::all();
 		$data['wallet']=Auth::user()->wallet;
 		$data['referrer'] = $ref[0]->referrer;
+		$data['earner'] = $ref[0]->earner;
 		$data['upi']=Auth::user()->upi_id;
 		$data['share_code']=Auth::user()->share_code;
 		$response['status']=true;
@@ -575,8 +573,10 @@ class UserController extends Controller
             $path="profile_pic/";
 
              $globalclass=new GlobalController();
+						 //Remove Previous Image
+						$globalclass->removeprevious();
 			
-			$res=$globalclass->upload_img($pic,$path);
+		      	$res=$globalclass->upload_img($pic,$path);
 			
             if($res['status'])
             {
@@ -732,6 +732,7 @@ class UserController extends Controller
 		
 		 if($request->type=='yes')
         {
+			Vendors_Subsciber::where('vendor_id',$request->vendor_id)->where('user_id',Auth::user()->id)->delete();
             $feed=new Vendors_Subsciber;
             $feed->user_id=Auth::user()->id;
             $feed->vendor_id=$request->vendor_id;

@@ -78,7 +78,8 @@ class UserTransactionController extends Controller
 		   $res->txn_amount = $request->transfer_amount;
 		   $res->txn_status = 'pending';
 		   $res->txn_type = 'debit';
-		   $res->comment=$request->upi_id;
+			 $msg = "Money has been successfully transfered to your bank account";
+		   $res->comment=$msg;
 		   //$res->save();
 		   if($res->save()){
 			   //update user wallet

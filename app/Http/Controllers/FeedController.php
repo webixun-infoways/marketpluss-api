@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\Crypt;
 use App\Jobs\ProcessPush;
 use App\Http\Controllers\UserTransactionController;
 use App\Http\Controllers\GlobalController;
-
+use Storage;
 class FeedController extends Controller
 {
     public function delete_feed(Request $request){
@@ -47,6 +47,19 @@ class FeedController extends Controller
         $feed=Feed::where('id',$request->feed_id)->where('vendor_id',Auth::user()->id)->update(['feed_status'=>'delete']);
         if($feed)
         {
+            $current_pic=feed_content::where('feed_id',$request->feed_id)->get(['id','content_src']);
+            foreach($current_pic as $pic)
+            {
+                $pic_id=$pic->id;
+                $res = feed_content::where('id',$pic_id)->update(['content_status'=>'delete']);
+                 //code for delete the file from storage
+                if($res){
+                    $nf= str_replace(env('APP_CDN_URL'),'',$pic->content_src);
+                    Storage::disk(env('DEFAULT_STORAGE'))->delete($nf);
+                }
+               
+            }
+            
             $response['status']=true;
             $response['msg']="Feed successfully deleted!";
         }
@@ -158,9 +171,10 @@ class FeedController extends Controller
 			//Cashback Initiated
 			$permission=new UserTransactionController();
 			$coin = point_level::get();
+            // return $coin;
 			$today_earning = user_txn_log::where('user_id',Auth::user()->id)->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
-			if($today_earning <= $coin->max_point_per_day){
-				$heading_user= $coin[0]->feed_points." MP Coins has been initialted Inio your account!";
+			if($today_earning <= $coin[0]->max_point_per_day){
+				$heading_user= $coin[0]->feed_points." MP Coins has been initiated to your account!";
 				$permission->credit_coin($user_id,$heading_user,$coin[0]->feed_points,'success','credit');
 				$post_url="https://marketpluss.com/";
 				ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
@@ -191,6 +205,7 @@ class FeedController extends Controller
 
         if($request->type=='yes')
         {
+			Feed_like::where('feed_id',$request->feed_id)->where('user_id',Auth::user()->id)->delete();
             $feed=new Feed_like;
             $feed->user_id=Auth::user()->id;
             $feed->feed_id=$request->feed_id;
@@ -600,6 +615,7 @@ class FeedController extends Controller
 
         if($request->type=='save')
         {
+			Feed_Save::where('feed_id',$request->feed_id)->where('user_id',Auth::user()->id)->delete();
             $feed=new Feed_Save;
             $feed->user_id=Auth::user()->id;
             $feed->feed_id=$request->feed_id;

@@ -235,16 +235,20 @@ class VendorController extends Controller
          //condition to check iF file exits or not
          if($request->hasFile('update_profile_picture'))
          {
-             $pic=$request->file('update_profile_picture');
+            $pic=$request->file('update_profile_picture');
 			
-			$current_pic=Auth::user()->profile_pic;
+			// $current_pic=Auth::user()->profile_pic;
 			
-			//code for delete the file from storage
-			$nf= str_replace(env('APP_CDN_URL'),'',$current_pic);
-			Storage::disk(env('DEFAULT_STORAGE'))->delete($nf);
+			// //code for delete the file from storage
+			// $nf= str_replace(env('APP_CDN_URL'),'',$current_pic);
+			// Storage::disk(env('DEFAULT_STORAGE'))->delete($nf);
 			
 			//object to upload the file
 			$globalclass=new GlobalController();
+
+            //Remove Previous Image
+            $globalclass->removeprevious();
+            
 			$path="shop_pic/";
 			
 			$res=$globalclass->upload_img($pic,$path);
@@ -662,6 +666,11 @@ class VendorController extends Controller
 			
              if($res['status'])
              {
+                $current_pic=Vendor_Product::find($request->product_id);
+                //code for delete the file from storage
+                $nf= str_replace(env('APP_CDN_URL'),'',$current_pic->product_img);
+                Storage::disk(env('DEFAULT_STORAGE'))->delete($nf);
+
                 $path=$res['file_name'];
 
                 $v_product= Vendor_Product::find($request->product_id);
@@ -1287,6 +1296,11 @@ class VendorController extends Controller
 
             if($res)
             {
+                $current_pic=Vendor_cover::find($request->cover_id);
+                //code for delete the file from storage
+                $nf= str_replace(env('APP_CDN_URL'),'',$current_pic->image);
+                Storage::disk(env('DEFAULT_STORAGE'))->delete($nf);
+                
                 $response['status']=true;
                 $response['msg']="delete";
             }
@@ -1306,7 +1320,7 @@ class VendorController extends Controller
         $vendor_id=Auth::user()->id;
 		//return $vendor_id;
 		$offer_data=Vendor_Offer::where('vendor_id',$vendor_id)->whereDate('start_to','>=',date('Y-m-d'))->where('status','!=','delete')->get();
-		return $offer_data;
+		
 		foreach($offer_data as $key=>$o)
 		{
 			$offer_id=$o->id;
