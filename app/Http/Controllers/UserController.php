@@ -137,13 +137,10 @@ class UserController extends Controller
 					ProcessPush::dispatch($heading_vendor,$post_url,$request->vendor_id,'vendor','');
 				}
 			}else{
-				//return "NO";
-				
-				 // $permission->credit_coin($request->vendor_id,'12345',$coin[0]->review_point,'Success','UPI');
 				$today_earning = user_txn_log::where('user_id',Auth::user()->id)->where('txn_status','success')->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
 				//return $today_earning;
 				if($today_earning <= $coin[0]->max_point_per_day){
-					$heading_user= $coin[0]->review_point." MP Coins has been initiated fo review";
+					$heading_user= $coin[0]->review_point." MP Coins has been initiated for review";
 					//Point credit to User
 					$permission->credit_coin($user_id,$heading_user,$coin[0]->review_point,'success','credit');
 					
@@ -233,7 +230,7 @@ class UserController extends Controller
 			$response['status']=false;
 		$response['msg']="No data found.";
 		}
-		return $response;
+		//return $response;
 		return json_encode($response,JSON_UNESCAPED_SLASHES);
 	}
 	
@@ -245,6 +242,7 @@ class UserController extends Controller
 		$data2=point_level::all();
 		$data['wallet']=Auth::user()->wallet;
 		$data['referrer'] = $ref[0]->referrer;
+		$data['earner'] = $ref[0]->earner;
 		$data['upi']=Auth::user()->upi_id;
 		$data['share_code']=Auth::user()->share_code;
 		$response['status']=true;
@@ -575,8 +573,10 @@ class UserController extends Controller
             $path="profile_pic/";
 
              $globalclass=new GlobalController();
+						 //Remove Previous Image
+						$globalclass->removeprevious();
 			
-			$res=$globalclass->upload_img($pic,$path);
+		      	$res=$globalclass->upload_img($pic,$path);
 			
             if($res['status'])
             {
