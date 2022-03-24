@@ -133,10 +133,14 @@ Route::middleware('auth:vendor-api')->group(function () {
     Route::post('vendor_get_vendor_product', [VendorController::class,'get_vendor_product_vendor']);
 	Route::post('delete_feed_comment_vendor', [FeedController::class,'delete_feed_comment']);
 	Route::post('update_status_product_offer', [VendorController::class,'update_status_product_offer']);
-	 Route::post('get_vendor_offers_vendor', [VendorController::class,'get_vendor_offers_vendor']);
+	Route::post('get_vendor_offers_vendor', [VendorController::class,'get_vendor_offers_vendor']);
 	Route::post('vendorReviewsRating',[VendorController::class,'vendorReviewsRating']); 
-	  Route::post('get_single_feed_vendor',[FeedController::class,'get_single_feed']);
-	  
+	Route::post('get_single_feed_vendor',[FeedController::class,'get_single_feed']);
+	Route::get('vendor_shop_visit',[VendorController::class,'vendor_shop_visit']);
+	Route::get('get_vendor_follower',[VendorController::class,'get_vendor_follower']);
+	Route::get('get_contacts_detail',[VendorController::class,'get_contacts_detail']);
+	Route::get('get_saved_feed_user_detail',[VendorController::class,'get_saved_feed_user_detail']);
+
     Route::post('logout_vendor', [AuthController::class,'logout']);
 
 });

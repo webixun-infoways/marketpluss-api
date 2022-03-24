@@ -8,6 +8,7 @@ use App\Models\Vendor;
 use App\Models\vendor_main_categories;
 use App\Models\Vendor_category;
 use App\Models\Vendor_Offer;
+use App\Models\User;
 use App\Models\Vendor_Offer_Product;
 use App\Models\Vendor_Shop_Visit;
 use App\Models\Vendors_Subsciber;
@@ -26,6 +27,86 @@ use Illuminate\Support\Facades\Crypt;
 use Storage;
 class VendorController extends Controller
 {
+    //Vendor Shop Visit
+    public function vendor_shop_visit()
+    {
+        $id = Auth::user()->id;
+        $data = Vendor_Shop_Visit::join('vendors','vendors.id','vendor_shop_visit.vendor_id')
+        ->join('users','users.id','vendor_shop_visit.user_id')
+        ->where('vendor_shop_visit.vendor_id',$id)
+        ->where('vendor_shop_visit.user_activity','shop_visit')
+        ->select(['users.name','users.profile_pic','vendor_shop_visit.created_at as time'])
+        ->paginate(10);
+        if(count($data)>0){
+            $response['status']=true;
+            $response['data']=$data;
+        }else{
+            $response['status']=false;
+            $response['msg']="No data found!";
+        }
+
+        return response()->json($response);
+    }
+    //Contact Details 
+    public function get_contacts_detail()
+    {
+        $id = Auth::user()->id;
+        $data = Vendor_Shop_Visit::join('vendors','vendors.id','vendor_shop_visit.vendor_id')
+        ->join('users','users.id','vendor_shop_visit.user_id')
+        ->where('vendor_shop_visit.vendor_id',$id)
+        ->where('vendor_shop_visit.user_activity','contact')
+        ->select(['users.name','users.profile_pic','vendor_shop_visit.created_at as time'])
+        ->paginate(10);
+        if(count($data)>0){
+            $response['status']=true;
+            $response['data']=$data;
+        }else{
+            $response['status']=false;
+            $response['msg']="No data found!";
+        }
+
+        return response()->json($response);
+    }
+
+    //Saved Feed User Details
+    public function get_saved_feed_user_detail()
+    {
+        $id = Auth::user()->id;
+        $data = Feed::join('feed_saves','feed_saves.feed_id','feeds.id')
+        ->where('feeds.vendor_id',$id)
+        ->select(['feeds.id as feed_id'])
+        ->addSelect(['username' => User::select('name')->whereColumn('id', 'feed_saves.user_id')])
+        ->addSelect(['profile_pic' => User::select('profile_pic')->whereColumn('id', 'feed_saves.user_id')])
+        ->paginate(10);
+        if(count($data)>0){
+            $response['status']=true;
+            $response['data']=$data;
+        }else{
+            $response['status']=false;
+            $response['msg']="No data found!";
+        }
+
+        return response()->json($response);
+    }
+    //Vendor Feed View
+    public function get_vendor_follower()
+    {
+        $id = Auth::user()->id;
+        $data = Vendors_Subsciber::join('vendors','vendors.id','vendors_subscibers.vendor_id')
+        ->join('users','users.id','vendors_subscibers.user_id')
+        ->where('vendors_subscibers.vendor_id',$id)
+        ->select(['users.name','users.profile_pic'])
+        ->paginate(10);
+        if(count($data)>0){
+            $response['status']=true;
+            $response['data']=$data;
+        }else{
+            $response['status']=false;
+            $response['msg']="No data found!";
+        }
+
+        return response()->json($response);
+    }
 	public function edit_category(Request $request){
 	    $validator = Validator::make($request->all(), [ 
 	       'category_id'=> 'required',
@@ -69,7 +150,7 @@ class VendorController extends Controller
             $q->from('feeds')->where('vendor_id',$vendor_id)->where('user_type','vendor')->selectRaw('id');
         })->count();
 
-        $response['feed_view']=Feed::where('vendor_id',$vendor_id)->  where('user_type','vendor')->sum('feed_view');
+        $response['feed_view']=Feed::where('vendor_id',$vendor_id)->where('user_type','vendor')->sum('feed_view');
 
         $res['status']=true;
         $res['data']=$response;
