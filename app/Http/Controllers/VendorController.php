@@ -9,7 +9,7 @@ use App\Models\vendor_main_categories;
 use App\Models\Vendor_category;
 use App\Models\Vendor_Offer;
 use App\Models\Vendor_Offer_Product;
-use App\Models\vendor_shop_visit;
+use App\Models\Vendor_Shop_Visit;
 use App\Models\Vendors_Subsciber;
 use App\Models\vendor_rating;
 use App\Models\Vendor_cover;
@@ -61,8 +61,8 @@ class VendorController extends Controller
     {
         $vendor_id=Auth::user()->id;
 		$response['current_rating']=Auth::user()->current_rating;
-        $response['shop_visit']=vendor_shop_visit::where('vendor_id',$vendor_id)->where('user_activity','shop_visit')->count();
-        $response['contact']=vendor_shop_visit::where('vendor_id',$vendor_id)->where('user_activity','contact')->count();
+        $response['shop_visit']=Vendor_Shop_Visit::where('vendor_id',$vendor_id)->where('user_activity','shop_visit')->count();
+        $response['contact']=Vendor_Shop_Visit::where('vendor_id',$vendor_id)->where('user_activity','contact')->count();
 
         $response['followers']=Vendors_Subsciber::where('vendor_id',$vendor_id)->count();
         $response['feed_save']=Feed_Save::whereIn('feed_id', function($q) use($vendor_id){
@@ -1360,7 +1360,7 @@ class VendorController extends Controller
 
         $user_id=Auth::user()->id;
         
-        $shop_visit = new vendor_shop_visit;
+        $shop_visit = new Vendor_Shop_Visit;
 
         $shop_visit->user_id=$user_id;
         $shop_visit->vendor_id=$request->vendor_id;
