@@ -141,6 +141,7 @@ Route::middleware('auth:vendor-api')->group(function () {
 	Route::get('get_contacts_detail',[VendorController::class,'get_contacts_detail']);
 	Route::get('get_saved_feed_user_detail',[VendorController::class,'get_saved_feed_user_detail']);
 
+	Route::post('update_flat_deals',[VendorController::class,'update_flat_deals']);
     Route::post('logout_vendor', [AuthController::class,'logout']);
 
 });

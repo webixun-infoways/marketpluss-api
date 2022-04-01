@@ -287,7 +287,9 @@ class VendorController extends Controller
          $user->email=$request->email;
          $user->shop_name=$request->name;
 		 $user->description=$request->description;
-		 
+
+         $user->whatsapp=$request->whatsapp;
+         $user->website=$request->website;
          if($user->save())
          {
              $response['status']=true;
@@ -1486,4 +1488,37 @@ class VendorController extends Controller
 		
 		return json_encode($response,JSON_UNESCAPED_SLASHES);
 	}
+
+
+   public function update_flat_deals(Request $request)
+   {
+    $validator = Validator::make($request->all(), [ 
+        'first_time' => 'required', 
+        'all_time' => 'required',
+    ]);
+
+    if ($validator->fails())
+    {
+        return response(['errors'=>$validator->errors()->all()], 422);
+    }
+    
+   $vendor_id=Auth::user()->id;
+   
+   
+    $user=vendor::find($vendor_id);
+
+    $user->flat_deal_first_time=$request->first_time;
+    $user->flat_deal_all_time=$request->all_time;
+    if($user->save())
+    {
+        $response['status']=true;
+        $response['msg']="Profile successfully updated!";
+    }
+    else{
+        $response['status']=false;
+        $response['msg']="Profile could not be updated!";
+    }
+    
+    echo json_encode($response);
+   }
 }
