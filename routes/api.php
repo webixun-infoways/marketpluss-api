@@ -140,7 +140,8 @@ Route::middleware('auth:vendor-api')->group(function () {
 	Route::get('get_vendor_follower',[VendorController::class,'get_vendor_follower']);
 	Route::get('get_contacts_detail',[VendorController::class,'get_contacts_detail']);
 	Route::get('get_saved_feed_user_detail',[VendorController::class,'get_saved_feed_user_detail']);
-
+    Route::post('verify_order_id',[VendorController::class,'verify_order_id']);
+    Route::post('update_order_status',[VendorController::class,'update_order_status']);
 	Route::post('update_flat_deals',[VendorController::class,'update_flat_deals']);
     Route::post('logout_vendor', [AuthController::class,'logout']);
 

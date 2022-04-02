@@ -15,6 +15,7 @@ use App\Models\Vendors_Subsciber;
 use App\Models\vendor_rating;
 use App\Models\Vendor_cover;
 use App\Models\Vendor_Product;
+use App\Models\UserOrders;
 use App\Models\Category;
 use App\Models\Notification;
 use App\Jobs\ProcessPush;
@@ -27,6 +28,60 @@ use Illuminate\Support\Facades\Crypt;
 use Storage;
 class VendorController extends Controller
 {
+    public function verify_order_id(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'order_id' => 'required'
+        ]);
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+        $vendor_id=Auth::user()->id;
+        $data=UserOrders::with('user')->where('order_code',$request->order_id)->where('vendor_id',$vendor_id)->where('order_status','pending')->get();
+        if(count($data)>0)
+        {
+            $response['status']=true;
+            $response['data']=$data;
+        }
+        else
+        {
+            $response['status']=false;
+            $response['data']="Order ID is not valid";
+        }
+        return   json_encode($response,JSON_UNESCAPED_SLASHES);
+    }
+
+    public function update_order_status(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'order_id' => 'required',
+            'status' => 'required',
+            'message' => 'required_if:status,!=,declined'
+        ]);
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+        $vendor_id=Auth::user()->id;
+
+        $data=UserOrders::where('order_code',$request->order_id)->where('vendor_id',$vendor_id)->update(['order_status'=>$request->status]);
+        
+        if($data)
+        {
+            $response['status']=true;
+        }
+        else if($request->status != 'accept')
+        {
+            $response['status']=false;
+            $response['msg']=$request->message;
+        }
+        return   json_encode($response,JSON_UNESCAPED_SLASHES);
+    }
+
+    
+
+
     //Vendor Shop Visit
     public function vendor_shop_visit()
     {
