@@ -1031,25 +1031,22 @@ class VendorController extends Controller
         - radians(" . $request->longitude . ")) 
         + sin(radians(" . $request->latitude . ")) 
         * sin(radians(`shop_latitude`))))";
-		//return $haversine;
-		//$dd = sprintf("%.2f", $haversine);
-		//return $dd;
 		
 		 //fetch store details of vendor
-        $store_data=Vendor::with('covers:image,vendor_id')->with('today_timing')->where('id','=',$request->vendor_id)->
-		addSelect(['vendor_follow' =>Vendors_Subsciber::select('vendor_id')->whereColumn('vendor_id', 'vendors.id')->where('user_id',$user_id)])->selectRaw("{$haversine} AS distance")->get();
-
-        //$distance=Vendor::get();
-		//return $distance;
+        //  return $request->vendor_id;
+        $store_data=Vendor::with('covers:image,vendor_id')->with('today_timing')->where('id','=',$request->vendor_id)
+        ->addSelect([
+        'category_id'=>Category::select('id')->where('parent_id','0')->whereIn('id',vendor_main_categories::select('category_id')->where('vendor_id',$request->vendor_id)),
+        'vendor_follow' =>Vendors_Subsciber::select('vendor_id')->whereColumn('vendor_id', 'vendors.id')->where('user_id',$user_id)])
+        ->selectRaw("{$haversine} AS distance")->get();
         
-        //return $store_data;
-        // exit;
         if($store_data!=null)
         {
             $response['status']=true;
             $response['data']=$store_data;
             //$response['distance']=$distance; 
 			$response['categories']=Vendor_category::with('products')->where('vendor_id',$request->vendor_id)->get();
+            $response['shop_timing']=vendor_timing::where('vendor_id',$request->vendor_id)->get(['day_name','open_timing','close_timing']);
             $response['data'][0]['followers']=Vendors_Subsciber::where('vendor_id',$request->vendor_id)->count();
         }
         else{
@@ -1263,6 +1260,8 @@ class VendorController extends Controller
 			->where('vendor_offers.vendor_id',$vendor_id)
 			->where('vendor_offers.status','active')
 			->orderBy('distance')->paginate(10);
+
+            
 		
         }
         else{
@@ -1289,7 +1288,7 @@ class VendorController extends Controller
 				->paginate(10);
 		
             }
-			return $offer_data;
+			// return $offer_data;
         }
         
         
