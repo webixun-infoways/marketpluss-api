@@ -70,13 +70,22 @@ class VendorController extends Controller
         if($data)
         {
             $response['status']=true;
+            // $heading_user = "Order has been accepted!";
         }
         else if($request->status != 'accept')
         {
             $response['status']=false;
             $response['msg']=$request->message;
+            // $heading_user = $request->message;
         }
-        return   json_encode($response,JSON_UNESCAPED_SLASHES);
+
+        //notification details 
+        // $post_url=env('NOTIFICATION_USER_URL')."/offer/".$maxid;
+        // $desc = $request->offer_description;
+        
+        // //insert notification
+        // ProcessPush::dispatch($heading_user,$post_url,$subscriber,"user",$desc);
+        return json_encode($response,JSON_UNESCAPED_SLASHES);
     }
 
     
