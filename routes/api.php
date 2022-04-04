@@ -128,6 +128,8 @@ Route::middleware('auth:vendor-api')->group(function () {
     Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
     
     Route::post('get_vendor_data', [VendorController::class,'get_vendor_data']);
+    Route::post('get_orders_vendor', [VendorController::class,'get_orders_vendor']);
+    
     Route::post('edit_vendor_offer', [VendorController::class,'update_vendor_offer']);
 	
     Route::post('vendor_get_vendor_product', [VendorController::class,'get_vendor_product_vendor']);

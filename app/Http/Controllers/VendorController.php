@@ -28,6 +28,43 @@ use Illuminate\Support\Facades\Crypt;
 use Storage;
 class VendorController extends Controller
 {
+    public function get_vendor_data(Request $request)
+    {
+        $vendor_id=Auth::user()->id;
+		$response['current_rating']=Auth::user()->current_rating;
+        $response['shop_visit']=Vendor_Shop_Visit::where('vendor_id',$vendor_id)->where('user_activity','shop_visit')->count();
+        $response['contact']=Vendor_Shop_Visit::where('vendor_id',$vendor_id)->where('user_activity','contact')->count();
+
+        $response['followers']=Vendors_Subsciber::where('vendor_id',$vendor_id)->count();
+        $response['total_earnning']=UserOrders::where('vendor_id',$vendor_id)->sum('total_amount');
+
+        $response['feed_save']=Feed_Save::whereIn('feed_id', function($q) use($vendor_id){
+            $q->from('feeds')->where('vendor_id',$vendor_id)->where('user_type','vendor')->selectRaw('id');
+        })->count();
+
+        $response['feed_view']=Feed::where('vendor_id',$vendor_id)->where('user_type','vendor')->sum('feed_view');
+
+        $res['status']=true;
+        $res['data']=$response;
+        return json_encode($res);
+    }
+    public function get_orders_vendor(Request $request)
+    {
+        $vendor_id=Auth::user()->id;
+        $data=UserOrders::with('user')->where('vendor_id',$vendor_id)->orderByDesc('id')->paginate(20);;
+        if(count($data)>0)
+        {
+            $response['status']=true;
+            $response['data']=$data;
+        }
+        else
+        {
+            $response['status']=false;
+            $response['data']="Order ID is not valid";
+        }
+        return   json_encode($response,JSON_UNESCAPED_SLASHES);
+
+    }
     public function verify_order_id(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
@@ -202,24 +239,6 @@ class VendorController extends Controller
 		
     return json_encode($response,JSON_UNESCAPED_SLASHES);
 	}
-    public function get_vendor_data(Request $request)
-    {
-        $vendor_id=Auth::user()->id;
-		$response['current_rating']=Auth::user()->current_rating;
-        $response['shop_visit']=Vendor_Shop_Visit::where('vendor_id',$vendor_id)->where('user_activity','shop_visit')->count();
-        $response['contact']=Vendor_Shop_Visit::where('vendor_id',$vendor_id)->where('user_activity','contact')->count();
-
-        $response['followers']=Vendors_Subsciber::where('vendor_id',$vendor_id)->count();
-        $response['feed_save']=Feed_Save::whereIn('feed_id', function($q) use($vendor_id){
-            $q->from('feeds')->where('vendor_id',$vendor_id)->where('user_type','vendor')->selectRaw('id');
-        })->count();
-
-        $response['feed_view']=Feed::where('vendor_id',$vendor_id)->where('user_type','vendor')->sum('feed_view');
-
-        $res['status']=true;
-        $res['data']=$response;
-        return json_encode($res);
-    }
 	
 	
 	
