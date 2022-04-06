@@ -72,7 +72,7 @@ class AuthController extends Controller
 		}
 		else if($request->verification_type=='vendor'){
 
-			$data = Vendor::where('contact', $contact)->get();
+			$data = Vendor::where('status','Active')->where('contact', $contact)->get();
 
 			if ($data->count()==0)
 			{
@@ -82,7 +82,7 @@ class AuthController extends Controller
         		$user->save();
 			}
 			else
-				$user = Vendor::where('contact',$contact)->update(array('password' =>$otp));
+				$user = Vendor::where('status','Active')->where('contact',$contact)->update(array('password' =>$otp));
 		}
 		else{
 			return response()->json(['error' => 'Unauthorized Access!'], 401);
@@ -158,7 +158,7 @@ class AuthController extends Controller
 		}
 		else if ($request->verification_type=='vendor'){
 			
-			$vendor = Vendor::where("contact", $request->contact)->first();
+			$vendor = Vendor::where('status','Active')->where("contact", $request->contact)->first();
         	
 			if(!isset($vendor)){
 				return response()->json(['error' => 'Account not found.'], 401);

@@ -57,7 +57,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('get_vendor_product', [VendorController::class,'get_vendor_product']);
     Route::post('update_shop_visit_contact', [VendorController::class,'update_shop_visit']);
     Route::post('get_vendor_offers', [VendorController::class,'get_vendor_offers']);
- Route::post('get_vendor_offers_single', [VendorController::class,'get_vendor_offers_single']);
+    Route::post('get_vendor_offers_single', [VendorController::class,'get_vendor_offers_single']);
 	
 	Route::post('recent_view_shops', [UserController::class,'recent_view_shops']);
 	

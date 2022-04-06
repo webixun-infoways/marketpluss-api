@@ -429,7 +429,7 @@ class UserController extends Controller
 		}
 		else if ($request->category_type == 'shop')
 		{
-			$data=Vendor::whereIn('id',function($q) use($user_id){
+			$data=Vendor::where('status','Active')->whereIn('id',function($q) use($user_id){
 				$q->from('user_fev_vendors')->selectRaw('vendor_id')->where('user_id',$user_id);
 			})->get();
 			
@@ -459,13 +459,13 @@ class UserController extends Controller
 		$q=$request->search_query;
 		if($request->search_type == 'vendor')
 		{
-			$search_vendor=Vendor::where('shop_name','like', '%' . $q . '%')->limit(5)->get();
+			$search_vendor=Vendor::where('status','Active')->where('shop_name','like', '%' . $q . '%')->limit(5)->get();
 			$response['vendor']=$search_vendor;
 		}
 		else{
 			
 			$search_product=Vendor_Product::where('product_name','like', '%' . $q . '%')->limit(5)->get();
-			$search_vendor=Vendor::where('shop_name','like', '%' . $q . '%')->limit(5)->get();
+			$search_vendor=Vendor::where('status','Active')->where('shop_name','like', '%' . $q . '%')->limit(5)->get();
 			$response['product']=$search_product;
 			$response['vendor']=$search_vendor;
 		}
@@ -480,7 +480,7 @@ class UserController extends Controller
 		{
 			$user_id=Auth::user()->id;
 			
-			$data=Vendor::whereIn('id',function($q) use($user_id){
+			$data=Vendor::where('status','Active')->whereIn('id',function($q) use($user_id){
 				$q->from('vendor_shop_visit')->selectRaw('vendor_id')->where('user_id',$user_id)->orderBy('id', 'DESC');
 			})->limit(10)->get();
 			
