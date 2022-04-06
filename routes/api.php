@@ -8,6 +8,7 @@ use App\Http\Controllers\VendorController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\UserOrderController;
 use App\Http\Controllers\UserTransactionController;
 
 //Open Routes for fetch the data globally 
@@ -86,8 +87,12 @@ Route::middleware('auth:api')->group(function () {
 	Route::post('user_get_vendor_reviews',[UserController::class,'user_get_vendor_reviews']);
 	Route::post('get_vendor_reviews',[UserController::class,'get_vendor_reviews']);
 	Route::post('get_user_transations',[UserController::class,'get_user_transations']);
+
 	Route::post('transferTobank',[UserTransactionController::class,'transfer_to_bank']);
-	
+    Route::post('fetch_orders_user',[UserOrderController::class,'fetch_orders_user']);
+    Route::post('request_cashback_order',[UserOrderController::class,'request_cashback_order']);
+    Route::post('fetch_cashback_order_details_user',[UserOrderController::class,'fetch_cashback_order_details_user']);
+   
     //for logout 
     Route::post('logout_user', [AuthController::class,'logout']);
 });
