@@ -72,6 +72,49 @@ class UserOrderController extends Controller
         return   json_encode($response,JSON_UNESCAPED_SLASHES);
     }
 
+
+    public function calculate_order_discount(Request $request){
+		//return $request;
+		 $validator = Validator::make($request->all(), [ 
+            'vendor_id' => 'required', 
+			'amount' => 'required', 
+        ]);
+		//return Auth::user()->id;
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+        $vendor_data=Vendor::where('id',$request->vendor_id)->get(['flat_deal_first_time','flat_deal_all_time']);
+        $all_discount= $vendor_data[0]['flat_deal_all_time'];
+
+        //create new order
+        $discount=$request->amount*$all_discount/100;
+        $order_amount=$request->amount;
+        $final_amount=$request->amount-$discount;
+        
+        if($discount>0)
+        {
+            $response['status']=true;
+            $response['discount']=$discount;
+            $response['final_amount']=$final_amount;
+
+            $response['charges'][0]['name']="Service Fee";
+            $response['charges'][0]['amount']=25;
+            $response['charges'][0]['type']="add";
+        }
+        else
+        {
+            $response['status']=false;
+            $response['msg']="No Deals Available";
+        } 
+        
+
+        return json_encode($response);
+	}
+
+
     public function request_cashback_order(Request $request){
 		//return $request;
 		 $validator = Validator::make($request->all(), [ 
