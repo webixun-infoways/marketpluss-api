@@ -151,6 +151,8 @@ Route::middleware('auth:vendor-api')->group(function () {
     Route::post('verify_order_id',[VendorController::class,'verify_order_id']);
     Route::post('update_order_status',[VendorController::class,'update_order_status']);
 	Route::post('update_flat_deals',[VendorController::class,'update_flat_deals']);
+    Route::post('get_orders_details_vendor',[VendorController::class,'get_orders_details_vendor']);
+    
     Route::post('logout_vendor', [AuthController::class,'logout']);
 
 });

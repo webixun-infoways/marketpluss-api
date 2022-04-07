@@ -65,6 +65,33 @@ class VendorController extends Controller
         return   json_encode($response,JSON_UNESCAPED_SLASHES);
 
     }
+
+    public function get_orders_details_vendor(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'order_code' => 'required', 
+        ]);
+		//return Auth::user()->id;
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+        $data=UserOrders::with('user')->where('user_id',Auth::user()->id)->where('order_code',$request->order_code)->orderByDesc('id')->get();
+        if(count($data)>0)
+        {
+            $response['status']=true;
+            $response['data']=$data;
+        }
+        else
+        {
+            $response['status']=false;
+            $response['data']="Order ID is not valid";
+        }
+        return   json_encode($response,JSON_UNESCAPED_SLASHES);
+
+    }
     public function verify_order_id(Request $request)
     {
         $validator = Validator::make($request->all(), [ 
