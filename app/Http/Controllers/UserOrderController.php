@@ -90,7 +90,7 @@ class UserOrderController extends Controller
         $all_discount= $vendor_data[0]['flat_deal_all_time'];
 
         //create new order
-        $discount=$request->amount*$all_discount/100;
+        return $discount=floor($request->amount*$all_discount/100);
         $order_amount=$request->amount;
         $final_amount=$request->amount-$discount;
         
@@ -100,9 +100,9 @@ class UserOrderController extends Controller
             $response['discount']=$discount;
             $response['final_amount']=$final_amount;
 
-            $response['charges'][0]['name']="Service Fee";
-            $response['charges'][0]['amount']=25;
-            $response['charges'][0]['type']="add";
+            // $response['charges'][0]['name']="Service Fee";
+            // $response['charges'][0]['amount']=25;
+            // $response['charges'][0]['type']="add";
         }
         else
         {
