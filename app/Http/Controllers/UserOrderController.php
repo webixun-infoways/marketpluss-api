@@ -130,11 +130,11 @@ class UserOrderController extends Controller
 
         $vendor_data=Vendor::where('id',$request->vendor_id)->get(['flat_deal_first_time','flat_deal_all_time']);
         $all_discount= $vendor_data[0]['flat_deal_all_time'];
-
-        //create new order
-        $discount=floor($request->amount*$all_discount/100);
         $order_amount=$request->amount;
-        $final_amount=$request->amount-$discount;
+        //create new order
+        $discount=floor($order_amount*$all_discount/100);
+        
+        $final_amount=$order_amount-$discount;
         
         $order_code="MP-".Auth::user()->id.floor(time()-999999999);
 
