@@ -36,7 +36,7 @@ class VendorController extends Controller
         $response['contact']=Vendor_Shop_Visit::where('vendor_id',$vendor_id)->where('user_activity','contact')->count();
 
         $response['followers']=Vendors_Subsciber::where('vendor_id',$vendor_id)->count();
-        $response['total_earnning']=UserOrders::where('vendor_id',$vendor_id)->sum('total_amount');
+        $response['total_earnning']=UserOrders::where('vendor_id',$vendor_id)->sum('order_amount');
 
         $response['feed_save']=Feed_Save::whereIn('feed_id', function($q) use($vendor_id){
             $q->from('feeds')->where('vendor_id',$vendor_id)->where('user_type','vendor')->selectRaw('id');
@@ -78,7 +78,7 @@ class VendorController extends Controller
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
 
-        $data=UserOrders::with('user')->where('user_id',Auth::user()->id)->where('order_code',$request->order_code)->orderByDesc('id')->get();
+        $data=UserOrders::with('user')->where('vendor_id',Auth::user()->id)->where('order_code',$request->order_code)->orderByDesc('id')->get();
         if(count($data)>0)
         {
             $response['status']=true;
@@ -139,8 +139,8 @@ class VendorController extends Controller
 
              //send notification to vendor
              $heading_user= "Your Order ".$request->order_id." has been ".$request->status;
-             $post_url=env('NOTIFICATION_USER_URL')."/ViewOrder/".$order_code;
-             ProcessPush::dispatch($heading_user,$post_url,$request->vendor_id,'user','');
+             $post_url=env('NOTIFICATION_USER_URL')."/ViewOrder/".$request->order_id;
+             ProcessPush::dispatch($heading_user,$post_url,$vendor_id,'user','');
 
             // $heading_user = "Order has been accepted!";
         }
@@ -358,11 +358,27 @@ class VendorController extends Controller
       {
           $user_id=Auth::user()->id;
           $user=Vendor::with('timings')->where('id',$user_id)->get();
-  
+        
+         
           if($user!=null)
           {
               $response['status']=true;
               $response['data']=$user;
+              $x=0;
+              if($user[0]->profile_pic == null)
+              {
+                  $x=$x+1;
+                  $response['data'][0]['step']=$x;
+              }
+
+              $cover=Vendor_cover::where('vendor_id',$user_id)->get();
+
+            if(count($cover)==0)
+            {
+                $x=$x+1;
+                $response['data'][0]['step']=$x;
+            }
+    
           }
           else{
               $response['status']=false;
