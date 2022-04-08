@@ -134,6 +134,14 @@ class VendorController extends Controller
         if($data)
         {
             $response['status']=true;
+
+            $order_data=UserOrders::where('order_code',$request->order_id)->get(['user_id']);
+
+             //send notification to vendor
+             $heading_user= "Your Order ".$request->order_id." has been ".$request->status;
+             $post_url=env('NOTIFICATION_USER_URL')."/ViewOrder/".$order_code;
+             ProcessPush::dispatch($heading_user,$post_url,$request->vendor_id,'user','');
+
             // $heading_user = "Order has been accepted!";
         }
         else if($request->status != 'accept')

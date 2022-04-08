@@ -155,6 +155,13 @@ class UserOrderController extends Controller
             $response['final_amount']=$final_amount;
             $response['code']=$order_code;
             $response['msg']="Request Created!";
+
+            //send notification to vendor
+            $heading_user= Auth::user()->name." Requested a new order with you.";
+            $post_url=env('NOTIFICATION_VENDOR_URL')."/ViewOrder/".$order_code;
+            ProcessPush::dispatch($heading_user,$post_url,$request->vendor_id,'vendor','');
+			
+
         }
         else
         {
