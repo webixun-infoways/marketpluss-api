@@ -79,7 +79,7 @@ class AuthController extends Controller
 				$user = new Vendor;
 				$user->contact = $request->contact;
  				$user->password =$otp;
-				 $user->password ="pending";
+				 $user->status ="pending";
         		$user->save();
 			}
 			else
