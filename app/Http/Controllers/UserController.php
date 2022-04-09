@@ -639,7 +639,7 @@ class UserController extends Controller
 		{
 		// return "Hello";
 			$data=Vendor::with('offers')->with('today_timing')->with('favourite')
-			->select("vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
+			->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
 			->where('vendors.status','Active')
 			->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query) use ($cat){
 					$query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
@@ -650,7 +650,7 @@ class UserController extends Controller
 		}
 		if($request->sort_by == 'high_to_low'){
 				$data=Vendor::with('offers')->with('today_timing')->with('favourite')->where('status','Active')
-				->select("vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
+				->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
 				->where('vendors.status','Active')
 				->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
 						$query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
@@ -660,7 +660,7 @@ class UserController extends Controller
 				->paginate(10);
 		}else if($request->sort_by == 'low_to_high'){
 				$data=Vendor::with('offers')->with('today_timing')->with('favourite')
-				->select("vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
+				->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
 				->where('vendors.status','Active')
 				->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
 						$query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
