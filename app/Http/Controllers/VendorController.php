@@ -8,12 +8,14 @@ use App\Models\Vendor;
 use App\Models\vendor_main_categories;
 use App\Models\Vendor_category;
 use App\Models\Vendor_Offer;
+use App\Models\User;
 use App\Models\Vendor_Offer_Product;
-use App\Models\vendor_shop_visit;
+use App\Models\Vendor_Shop_Visit;
 use App\Models\Vendors_Subsciber;
 use App\Models\vendor_rating;
 use App\Models\Vendor_cover;
 use App\Models\Vendor_Product;
+use App\Models\UserOrders;
 use App\Models\Category;
 use App\Models\Notification;
 use App\Jobs\ProcessPush;
@@ -26,6 +28,221 @@ use Illuminate\Support\Facades\Crypt;
 use Storage;
 class VendorController extends Controller
 {
+    public function get_vendor_data(Request $request)
+    {
+        $vendor_id=Auth::user()->id;
+		$response['current_rating']=Auth::user()->current_rating;
+        $response['shop_visit']=Vendor_Shop_Visit::where('vendor_id',$vendor_id)->where('user_activity','shop_visit')->count();
+        $response['contact']=Vendor_Shop_Visit::where('vendor_id',$vendor_id)->where('user_activity','contact')->count();
+
+        $response['followers']=Vendors_Subsciber::where('vendor_id',$vendor_id)->count();
+        $response['total_earnning']=UserOrders::where('vendor_id',$vendor_id)->sum('order_amount');
+
+        $response['feed_save']=Feed_Save::whereIn('feed_id', function($q) use($vendor_id){
+            $q->from('feeds')->where('vendor_id',$vendor_id)->where('user_type','vendor')->selectRaw('id');
+        })->count();
+
+        $response['feed_view']=Feed::where('vendor_id',$vendor_id)->where('user_type','vendor')->sum('feed_view');
+
+        $res['status']=true;
+        $res['data']=$response;
+        return json_encode($res);
+    }
+    public function get_orders_vendor(Request $request)
+    {
+        $vendor_id=Auth::user()->id;
+        $data=UserOrders::with('user')->where('vendor_id',$vendor_id)->orderByDesc('id')->paginate(20);;
+        if(count($data)>0)
+        {
+            $response['status']=true;
+            $response['data']=$data;
+        }
+        else
+        {
+            $response['status']=false;
+            $response['data']="Order ID is not valid";
+        }
+        return   json_encode($response,JSON_UNESCAPED_SLASHES);
+
+    }
+
+    public function get_orders_details_vendor(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'order_code' => 'required', 
+        ]);
+		//return Auth::user()->id;
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+        $data=UserOrders::with('user')->where('vendor_id',Auth::user()->id)->where('order_code',$request->order_code)->orderByDesc('id')->get();
+        if(count($data)>0)
+        {
+            $response['status']=true;
+            $response['data']=$data;
+        }
+        else
+        {
+            $response['status']=false;
+            $response['data']="Order ID is not valid";
+        }
+        return   json_encode($response,JSON_UNESCAPED_SLASHES);
+
+    }
+    public function verify_order_id(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'order_id' => 'required'
+        ]);
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+        $vendor_id=Auth::user()->id;
+        $data=UserOrders::with('user')->where('order_code',$request->order_id)->where('vendor_id',$vendor_id)->where('order_status','pending')->get();
+        if(count($data)>0)
+        {
+            $response['status']=true;
+            $response['data']=$data;
+        }
+        else
+        {
+            $response['status']=false;
+            $response['data']="Order ID is not valid";
+        }
+        return   json_encode($response,JSON_UNESCAPED_SLASHES);
+    }
+
+    public function update_order_status(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'order_id' => 'required',
+            'status' => 'required',
+            'message' => 'required_if:status,!=,declined'
+        ]);
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+        $vendor_id=Auth::user()->id;
+
+        $data=UserOrders::where('order_code',$request->order_id)->where('vendor_id',$vendor_id)->update(['order_status'=>$request->status]);
+        
+        if($data)
+        {
+            $response['status']=true;
+
+            $order_data=UserOrders::where('order_code',$request->order_id)->get(['user_id']);
+
+             //send notification to vendor
+             $heading_user= "Your Order ".$request->order_id." has been ".$request->status;
+             $post_url=env('NOTIFICATION_USER_URL')."/ViewOrder/".$request->order_id;
+             ProcessPush::dispatch($heading_user,$post_url,$vendor_id,'user','');
+
+            // $heading_user = "Order has been accepted!";
+        }
+        else if($request->status != 'accept')
+        {
+            $response['status']=false;
+            $response['msg']=$request->message;
+            // $heading_user = $request->message;
+        }
+
+        //notification details 
+        // $post_url=env('NOTIFICATION_USER_URL')."/offer/".$maxid;
+        // $desc = $request->offer_description;
+        
+        // //insert notification
+        // ProcessPush::dispatch($heading_user,$post_url,$subscriber,"user",$desc);
+        return json_encode($response,JSON_UNESCAPED_SLASHES);
+    }
+
+    
+
+
+    //Vendor Shop Visit
+    public function vendor_shop_visit()
+    {
+        $id = Auth::user()->id;
+        $data = Vendor_Shop_Visit::join('vendors','vendors.id','vendor_shop_visit.vendor_id')
+        ->join('users','users.id','vendor_shop_visit.user_id')
+        ->where('vendor_shop_visit.vendor_id',$id)
+        ->where('vendor_shop_visit.user_activity','shop_visit')
+        ->select(['users.name','users.profile_pic','vendor_shop_visit.created_at as time'])
+        ->paginate(10);
+        if(count($data)>0){
+            $response['status']=true;
+            $response['data']=$data;
+        }else{
+            $response['status']=false;
+            $response['msg']="No data found!";
+        }
+
+        return response()->json($response);
+    }
+    //Contact Details 
+    public function get_contacts_detail()
+    {
+        $id = Auth::user()->id;
+        $data = Vendor_Shop_Visit::join('vendors','vendors.id','vendor_shop_visit.vendor_id')
+        ->join('users','users.id','vendor_shop_visit.user_id')
+        ->where('vendor_shop_visit.vendor_id',$id)
+        ->where('vendor_shop_visit.user_activity','contact')
+        ->select(['users.name','users.profile_pic','vendor_shop_visit.created_at as time'])
+        ->paginate(10);
+        if(count($data)>0){
+            $response['status']=true;
+            $response['data']=$data;
+        }else{
+            $response['status']=false;
+            $response['msg']="No data found!";
+        }
+
+        return response()->json($response);
+    }
+
+    //Saved Feed User Details
+    public function get_saved_feed_user_detail()
+    {
+        $id = Auth::user()->id;
+        $data = Feed::join('feed_saves','feed_saves.feed_id','feeds.id')
+        ->where('feeds.vendor_id',$id)
+        ->select(['feeds.id as feed_id'])
+        ->addSelect(['username' => User::select('name')->whereColumn('id', 'feed_saves.user_id')])
+        ->addSelect(['profile_pic' => User::select('profile_pic')->whereColumn('id', 'feed_saves.user_id')])
+        ->paginate(10);
+        if(count($data)>0){
+            $response['status']=true;
+            $response['data']=$data;
+        }else{
+            $response['status']=false;
+            $response['msg']="No data found!";
+        }
+
+        return response()->json($response);
+    }
+    //Vendor Feed View
+    public function get_vendor_follower()
+    {
+        $id = Auth::user()->id;
+        $data = Vendors_Subsciber::join('vendors','vendors.id','vendors_subscibers.vendor_id')
+        ->join('users','users.id','vendors_subscibers.user_id')
+        ->where('vendors_subscibers.vendor_id',$id)
+        ->select(['users.name','users.profile_pic'])
+        ->paginate(10);
+        if(count($data)>0){
+            $response['status']=true;
+            $response['data']=$data;
+        }else{
+            $response['status']=false;
+            $response['msg']="No data found!";
+        }
+
+        return response()->json($response);
+    }
 	public function edit_category(Request $request){
 	    $validator = Validator::make($request->all(), [ 
 	       'category_id'=> 'required',
@@ -57,24 +274,6 @@ class VendorController extends Controller
 		
     return json_encode($response,JSON_UNESCAPED_SLASHES);
 	}
-    public function get_vendor_data(Request $request)
-    {
-        $vendor_id=Auth::user()->id;
-		$response['current_rating']=Auth::user()->current_rating;
-        $response['shop_visit']=vendor_shop_visit::where('vendor_id',$vendor_id)->where('user_activity','shop_visit')->count();
-        $response['contact']=vendor_shop_visit::where('vendor_id',$vendor_id)->where('user_activity','contact')->count();
-
-        $response['followers']=Vendors_Subsciber::where('vendor_id',$vendor_id)->count();
-        $response['feed_save']=Feed_Save::whereIn('feed_id', function($q) use($vendor_id){
-            $q->from('feeds')->where('vendor_id',$vendor_id)->where('user_type','vendor')->selectRaw('id');
-        })->count();
-
-        $response['feed_view']=Feed::where('vendor_id',$vendor_id)->  where('user_type','vendor')->sum('feed_view');
-
-        $res['status']=true;
-        $res['data']=$response;
-        return json_encode($res);
-    }
 	
 	
 	
@@ -159,11 +358,27 @@ class VendorController extends Controller
       {
           $user_id=Auth::user()->id;
           $user=Vendor::with('timings')->where('id',$user_id)->get();
-  
+        
+         
           if($user!=null)
           {
               $response['status']=true;
               $response['data']=$user;
+              $x=0;
+              if($user[0]->profile_pic == null)
+              {
+                  $x=$x+1;
+                  $response['data'][0]['step']=$x;
+              }
+
+              $cover=Vendor_cover::where('vendor_id',$user_id)->get();
+
+            if(count($cover)==0)
+            {
+                $x=$x+1;
+                $response['data'][0]['step']=$x;
+            }
+    
           }
           else{
               $response['status']=false;
@@ -206,7 +421,9 @@ class VendorController extends Controller
          $user->email=$request->email;
          $user->shop_name=$request->name;
 		 $user->description=$request->description;
-		 
+
+         $user->whatsapp=$request->whatsapp;
+         $user->website=$request->website;
          if($user->save())
          {
              $response['status']=true;
@@ -948,25 +1165,22 @@ class VendorController extends Controller
         - radians(" . $request->longitude . ")) 
         + sin(radians(" . $request->latitude . ")) 
         * sin(radians(`shop_latitude`))))";
-		//return $haversine;
-		//$dd = sprintf("%.2f", $haversine);
-		//return $dd;
 		
 		 //fetch store details of vendor
-        $store_data=Vendor::with('covers:image,vendor_id')->with('today_timing')->where('id','=',$request->vendor_id)->
-		addSelect(['vendor_follow' =>Vendors_Subsciber::select('vendor_id')->whereColumn('vendor_id', 'vendors.id')->where('user_id',$user_id)])->selectRaw("{$haversine} AS distance")->get();
-
-        //$distance=Vendor::get();
-		//return $distance;
+        //  return $request->vendor_id;
+        $store_data=Vendor::where('vendors.status','Active')->with('covers:image,vendor_id')->with('today_timing')->where('id','=',$request->vendor_id)
+        ->addSelect([
+        'category_id'=>Category::select('id')->where('parent_id','0')->whereIn('id',vendor_main_categories::select('category_id')->where('vendor_id',$request->vendor_id)),
+        'vendor_follow' =>Vendors_Subsciber::select('vendor_id')->whereColumn('vendor_id', 'vendors.id')->where('user_id',$user_id)])
+        ->selectRaw("{$haversine} AS distance")->get();
         
-        //return $store_data;
-        // exit;
         if($store_data!=null)
         {
             $response['status']=true;
             $response['data']=$store_data;
             //$response['distance']=$distance; 
 			$response['categories']=Vendor_category::with('products')->where('vendor_id',$request->vendor_id)->get();
+            $response['shop_timing']=vendor_timing::where('vendor_id',$request->vendor_id)->get(['day_name','open_timing','close_timing']);
             $response['data'][0]['followers']=Vendors_Subsciber::where('vendor_id',$request->vendor_id)->count();
         }
         else{
@@ -1179,7 +1393,10 @@ class VendorController extends Controller
 			->selectRaw("{$haversine} AS distance")
 			->where('vendor_offers.vendor_id',$vendor_id)
 			->where('vendor_offers.status','active')
+            ->where('vendors.status','Active')
 			->orderBy('distance')->paginate(10);
+
+            
 		
         }
         else{
@@ -1187,7 +1404,7 @@ class VendorController extends Controller
             {
                $cate_id=$request->category_id;
 				
-				$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')
+				$offer_data=Vendor::where('vendors.status','Active')->join('vendor_offers','vendor_offers.vendor_id','vendors.id')
 				->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
 				->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
 				->selectRaw("{$haversine} AS distance")->whereIn('vendors.id',function($q) use($cate_id){
@@ -1196,7 +1413,7 @@ class VendorController extends Controller
             }
             else{
 				//return "Hello";
-                $offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')
+                $offer_data=Vendor::where('vendors.status','Active')->join('vendor_offers','vendor_offers.vendor_id','vendors.id')
 				->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
 				->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
 				->selectRaw("{$haversine} AS distance")
@@ -1206,7 +1423,7 @@ class VendorController extends Controller
 				->paginate(10);
 		
             }
-			return $offer_data;
+			// return $offer_data;
         }
         
         
@@ -1252,7 +1469,13 @@ class VendorController extends Controller
        
 		//confitions for check all the users
 
-		$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])->where('vendor_offers.id',$offer_id)->where('vendor_offers.status','!=','delete')->get();
+		$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')
+                    ->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
+                    ->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
+                    ->where('vendor_offers.id',$offer_id)
+                    ->where('vendors.status','Active')
+                    ->where('vendor_offers.status','!=','delete')
+                    ->get();
 		foreach($offer_data as $key=>$o)
 		{
 			$offer_id=$o->offer_id;
@@ -1360,7 +1583,7 @@ class VendorController extends Controller
 
         $user_id=Auth::user()->id;
         
-        $shop_visit = new vendor_shop_visit;
+        $shop_visit = new Vendor_Shop_Visit;
 
         $shop_visit->user_id=$user_id;
         $shop_visit->vendor_id=$request->vendor_id;
@@ -1405,4 +1628,37 @@ class VendorController extends Controller
 		
 		return json_encode($response,JSON_UNESCAPED_SLASHES);
 	}
+
+
+   public function update_flat_deals(Request $request)
+   {
+    $validator = Validator::make($request->all(), [ 
+        'first_time' => 'required', 
+        'all_time' => 'required',
+    ]);
+
+    if ($validator->fails())
+    {
+        return response(['errors'=>$validator->errors()->all()], 422);
+    }
+    
+   $vendor_id=Auth::user()->id;
+   
+   
+    $user=vendor::find($vendor_id);
+
+    $user->flat_deal_first_time=$request->first_time;
+    $user->flat_deal_all_time=$request->all_time;
+    if($user->save())
+    {
+        $response['status']=true;
+        $response['msg']="Profile successfully updated!";
+    }
+    else{
+        $response['status']=false;
+        $response['msg']="Profile could not be updated!";
+    }
+    
+    echo json_encode($response);
+   }
 }

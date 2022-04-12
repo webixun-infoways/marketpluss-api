@@ -159,7 +159,7 @@ class FeedController extends Controller
 		    $user_id=Auth::user()->id;
 			$last_added_data=Feed::with('feed_content')
 			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
-			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_name' => Vendor::select('name')->whereColumn('id', 'feeds.tag_id'),'vendor_profile' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.tag_id'),'vendor_area' => Vendor::select('area')->whereColumn('id', 'feeds.tag_id')])
+			->addSelect(['shop_name' => Vendor::where('status','Active')->select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_name' => Vendor::where('status','Active')->select('name')->whereColumn('id', 'feeds.tag_id'),'vendor_profile' => Vendor::where('status','Active')->select('profile_pic')->whereColumn('id', 'feeds.tag_id'),'vendor_area' => Vendor::where('status','Active')->select('area')->whereColumn('id', 'feeds.tag_id')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
 			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])->where('feed_status','active')
 			->orderBy('id','desc')->first();
@@ -296,7 +296,7 @@ class FeedController extends Controller
         {
 			$response=Feed::with('feed_content')->withCount('feed_like')->withCount('feed_comment')
 			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
-			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['shop_name' => Vendor::where('status','Active')->select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::where('status','Active')->select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
 			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])->where('feed_status','active')
 			->orderByDesc('updated_at')->paginate(10);
@@ -305,7 +305,7 @@ class FeedController extends Controller
 		{
 			$response=Feed::with('feed_content')->withCount('feed_like')->withCount('feed_comment')
 			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
-			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['shop_name' => Vendor::where('status','Active')->select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::where('status','Active')->select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')])
 			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
 			->where('user_type',$type)->where('feed_status','active')->orderByDesc('updated_at')->paginate(10);
@@ -315,7 +315,7 @@ class FeedController extends Controller
 			{
 			$response=Feed::with('feed_content')->withCount('feed_like')->withCount('feed_comment')
 			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
-			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['shop_name' => Vendor::where('status','Active')->select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::where('status','Active')->select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
 			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
 			->where('feed_status','active')
@@ -326,7 +326,7 @@ class FeedController extends Controller
 			
 			$response=Feed::with('feed_content')->withCount('feed_like')->withCount('feed_comment')
 			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
-			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['shop_name' => Vendor::where('status','Active')->select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::where('status','Active')->select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
 			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
 			->where('user_type',$type)->where('feed_status','active')
@@ -397,7 +397,7 @@ class FeedController extends Controller
 		$user_id=Auth::user()->id;
         $feed=Feed::with('feed_content')->withCount('feed_like')
 			->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
-			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['shop_name' => Vendor::where('status','Active')->select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::where('status','Active')->select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
 			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])->where('feed_status','active')
 			->where('id',$feed_id)->orderByDesc('updated_at')->get();
@@ -690,7 +690,7 @@ class FeedController extends Controller
        $user_id=Auth::user()->id;
         $data=Feed::with('feed_content')->withCount('feed_like')
 		->addSelect(['user_name' => User::select('name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user'),'user_profile_pic' => User::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','user')])
-			->addSelect(['shop_name' => Vendor::select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
+			->addSelect(['shop_name' => Vendor::where('status','Active')->select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_profile_pic' => Vendor::where('status','Active')->select('profile_pic')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id') ])->whereIn('feeds.id',function($q)use($user_id){
 				$q->from('feed_saves')->selectRaw('feed_id')->where('user_id', $user_id);
 		})->where('feed_status','active')->get();

@@ -8,6 +8,7 @@ use App\Http\Controllers\VendorController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\UserOrderController;
 use App\Http\Controllers\UserTransactionController;
 
 //Open Routes for fetch the data globally 
@@ -57,7 +58,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('get_vendor_product', [VendorController::class,'get_vendor_product']);
     Route::post('update_shop_visit_contact', [VendorController::class,'update_shop_visit']);
     Route::post('get_vendor_offers', [VendorController::class,'get_vendor_offers']);
- Route::post('get_vendor_offers_single', [VendorController::class,'get_vendor_offers_single']);
+    Route::post('get_vendor_offers_single', [VendorController::class,'get_vendor_offers_single']);
 	
 	Route::post('recent_view_shops', [UserController::class,'recent_view_shops']);
 	
@@ -86,9 +87,14 @@ Route::middleware('auth:api')->group(function () {
 	Route::post('user_get_vendor_reviews',[UserController::class,'user_get_vendor_reviews']);
 	Route::post('get_vendor_reviews',[UserController::class,'get_vendor_reviews']);
 	Route::post('get_user_transations',[UserController::class,'get_user_transations']);
+
 	Route::post('transferTobank',[UserTransactionController::class,'transfer_to_bank']);
-	
-    //for logout 
+    Route::post('fetch_orders_user',[UserOrderController::class,'fetch_orders_user']);
+    Route::post('request_cashback_order',[UserOrderController::class,'request_cashback_order']);
+    Route::post('fetch_cashback_order_details_user',[UserOrderController::class,'fetch_cashback_order_details_user']);
+    Route::post('calculate_order_discount',[UserOrderController::class,'calculate_order_discount']);
+   
+  //for logout 
     Route::post('logout_user', [AuthController::class,'logout']);
 });
 
@@ -128,15 +134,25 @@ Route::middleware('auth:vendor-api')->group(function () {
     Route::post('add_vendor_offer', [VendorController::class,'add_vendor_offer']);
     
     Route::post('get_vendor_data', [VendorController::class,'get_vendor_data']);
+    Route::post('get_orders_vendor', [VendorController::class,'get_orders_vendor']);
+    
     Route::post('edit_vendor_offer', [VendorController::class,'update_vendor_offer']);
 	
     Route::post('vendor_get_vendor_product', [VendorController::class,'get_vendor_product_vendor']);
 	Route::post('delete_feed_comment_vendor', [FeedController::class,'delete_feed_comment']);
 	Route::post('update_status_product_offer', [VendorController::class,'update_status_product_offer']);
-	 Route::post('get_vendor_offers_vendor', [VendorController::class,'get_vendor_offers_vendor']);
+	Route::post('get_vendor_offers_vendor', [VendorController::class,'get_vendor_offers_vendor']);
 	Route::post('vendorReviewsRating',[VendorController::class,'vendorReviewsRating']); 
-	  Route::post('get_single_feed_vendor',[FeedController::class,'get_single_feed']);
-	  
+	Route::post('get_single_feed_vendor',[FeedController::class,'get_single_feed']);
+	Route::get('vendor_shop_visit',[VendorController::class,'vendor_shop_visit']);
+	Route::get('get_vendor_follower',[VendorController::class,'get_vendor_follower']);
+	Route::get('get_contacts_detail',[VendorController::class,'get_contacts_detail']);
+	Route::get('get_saved_feed_user_detail',[VendorController::class,'get_saved_feed_user_detail']);
+    Route::post('verify_order_id',[VendorController::class,'verify_order_id']);
+    Route::post('update_order_status',[VendorController::class,'update_order_status']);
+	Route::post('update_flat_deals',[VendorController::class,'update_flat_deals']);
+    Route::post('get_orders_details_vendor',[VendorController::class,'get_orders_details_vendor']);
+    
     Route::post('logout_vendor', [AuthController::class,'logout']);
 
 });

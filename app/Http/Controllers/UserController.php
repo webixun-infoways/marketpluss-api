@@ -429,7 +429,7 @@ class UserController extends Controller
 		}
 		else if ($request->category_type == 'shop')
 		{
-			$data=Vendor::whereIn('id',function($q) use($user_id){
+			$data=Vendor::where('status','Active')->whereIn('id',function($q) use($user_id){
 				$q->from('user_fev_vendors')->selectRaw('vendor_id')->where('user_id',$user_id);
 			})->get();
 			
@@ -459,13 +459,13 @@ class UserController extends Controller
 		$q=$request->search_query;
 		if($request->search_type == 'vendor')
 		{
-			$search_vendor=Vendor::where('shop_name','like', '%' . $q . '%')->limit(5)->get();
+			$search_vendor=Vendor::where('status','Active')->where('shop_name','like', '%' . $q . '%')->limit(5)->get();
 			$response['vendor']=$search_vendor;
 		}
 		else{
 			
 			$search_product=Vendor_Product::where('product_name','like', '%' . $q . '%')->limit(5)->get();
-			$search_vendor=Vendor::where('shop_name','like', '%' . $q . '%')->limit(5)->get();
+			$search_vendor=Vendor::where('status','Active')->where('shop_name','like', '%' . $q . '%')->limit(5)->get();
 			$response['product']=$search_product;
 			$response['vendor']=$search_vendor;
 		}
@@ -480,7 +480,7 @@ class UserController extends Controller
 		{
 			$user_id=Auth::user()->id;
 			
-			$data=Vendor::whereIn('id',function($q) use($user_id){
+			$data=Vendor::where('status','Active')->whereIn('id',function($q) use($user_id){
 				$q->from('vendor_shop_visit')->selectRaw('vendor_id')->where('user_id',$user_id)->orderBy('id', 'DESC');
 			})->limit(10)->get();
 			
@@ -618,7 +618,7 @@ class UserController extends Controller
            'category_id'=>'required',
             'latitude'=>'required',
             'longitude'=>'required',
-			'sort_by'=>'required'
+			      'sort_by'=>'required'
         ]);
 
 		if ($validator->fails())
@@ -637,37 +637,37 @@ class UserController extends Controller
 		
 		if($request->sort_by == 'nearby')
 		{
-		$data=Vendor::with('offers')->with('today_timing')->with('favourite')
-		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating')
-		->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query) use ($cat){
-        $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
-        })
-		->having('distance','<','25')
-		->orderBy('distance')
-		->paginate(10);
+		// return "Hello";
+			$data=Vendor::with('offers')->with('today_timing')->with('favourite')
+			->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
+			->where('vendors.status','Active')
+			->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query) use ($cat){
+					$query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
+					})
+			->having('distance','<','25')
+			->orderBy('distance')
+			->paginate(10);
 		}
 		if($request->sort_by == 'high_to_low'){
-		
-		$data=Vendor::with('offers')->with('today_timing')->with('favourite')
-		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating')
-		->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
-        $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
-        })
-		->having('distance','<','25')
-		->orderBy('discount','ASC')
-		->paginate(10);
-		
-			
+				$data=Vendor::with('offers')->with('today_timing')->with('favourite')->where('status','Active')
+				->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
+				->where('vendors.status','Active')
+				->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
+						$query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
+						})
+				->having('distance','<','25')
+				->orderBy('discount','ASC')
+				->paginate(10);
 		}else if($request->sort_by == 'low_to_high'){
 				$data=Vendor::with('offers')->with('today_timing')->with('favourite')
-		->select("vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating')
-		->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
-        $query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
-        })
-		->having('distance','<','25')
-		->orderBy('discount','DESC')
-		->paginate(10);
-		
+				->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
+				->where('vendors.status','Active')
+				->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
+						$query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
+						})
+				->having('distance','<','25')
+				->orderBy('discount','DESC')
+				->paginate(10);
 		}
         //return $data;
 		

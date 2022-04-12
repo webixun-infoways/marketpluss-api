@@ -79,6 +79,7 @@ class AuthController extends Controller
 				$user = new Vendor;
 				$user->contact = $request->contact;
  				$user->password =$otp;
+				 $user->status ="pending";
         		$user->save();
 			}
 			else
@@ -161,7 +162,7 @@ class AuthController extends Controller
 			$vendor = Vendor::where("contact", $request->contact)->first();
         	
 			if(!isset($vendor)){
-				return response()->json(['error' => 'Account not found.'], 401);
+				return response()->json(['error' => 'Account not found, Please Contact Admin for support'], 401);
        		}
         	
 			if (!Hash::check($request->otp, $vendor->password)) 
