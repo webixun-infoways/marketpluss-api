@@ -32,6 +32,7 @@ class AuthController extends Controller
 		
 		if(env("APP_DEBUG")) // condition to check this is beta or release
 		{
+			//Beta
 			$otp=1234;
 			$msg="Use $otp. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
 			$data['contact']=$contact;
@@ -39,7 +40,8 @@ class AuthController extends Controller
 		}
 		else
 		{
-			$otp=1234;
+			//Production
+			$otp=rand(999,9999);
 			$msg="Use $otp. as your OTP for MarketPluss account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD";
 			
 			$data['contact']=$contact;

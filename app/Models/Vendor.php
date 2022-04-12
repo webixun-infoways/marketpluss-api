@@ -56,7 +56,8 @@ class Vendor extends Authenticatable
     }
 	
 	public function offers(){
-		return $this->hasOne(Vendor_Offer::class)->where('status','active')->latest();
+        $day=date("Y-m-d");
+		return $this->hasOne(Vendor_Offer::class)->where('start_from','<=',$day)->where('start_to','>=',$day)->where('status','active')->latest();
 	}
 	
 	public function favourite(){

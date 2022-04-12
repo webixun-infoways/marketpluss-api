@@ -223,6 +223,7 @@ class UserController extends Controller
 		{
 			$response['status']=true;
 			$response['data']=$vr;
+			$response['total_rating']=$total_rating;
 			$response['data'][0]['rating_percentage']=$rating_per;
 		}
 		else
