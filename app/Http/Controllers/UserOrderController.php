@@ -136,7 +136,7 @@ class UserOrderController extends Controller
         
         $final_amount=$order_amount-$discount;
         
-        $order_code="MP".Auth::user()->id.floor(time()-999999999);
+        $order_code="MP-".Auth::user()->id.floor(time()-999999999);
 
         $order=new UserOrders();
         $order->order_code= $order_code;
