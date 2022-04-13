@@ -33,14 +33,13 @@ use Illuminate\Support\Facades\Crypt;
 use App\Models\Notification;
 use App\Jobs\Processmail;
 use App\Jobs\ProcessPush;
-
+use Redirect;
 use App\Helpers\AppHelper;
 class ReferandEarn extends Controller
 {
     //fetch front category for user & vendor
     public function genrateRequest(Request $request)
     {
-		
 		$getip = AppHelper::get_ip();
 		$getbrowser = AppHelper::get_browsers();
 		$getdevice = AppHelper::get_device();
@@ -66,7 +65,7 @@ class ReferandEarn extends Controller
 			}
 			else
 			{
-				echo "invalid";
+				return Redirect::to("https://play.google.com/store/apps/details?id=com.marketpluss_user");
 			}
 			
 	//	}
@@ -81,9 +80,17 @@ class ReferandEarn extends Controller
 		//echo $request->id;
 		
 	$response['user'] = $getdevice;
-
-$response['hh'] = $getos;
-		
-		echo json_encode($response);
+	$response['hh'] = $getos;
+	
+	if($getos == 'ios')
+	{
+		return Redirect::to("https://play.google.com/store/apps/details?id=com.marketpluss_user");
+	}
+	else
+	{
+		return Redirect::to("https://play.google.com/store/apps/details?id=com.marketpluss_user");
+	}
+	
+		//echo json_encode($response);
     }
 }
