@@ -40,4 +40,20 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+
+    // public function cashback()
+    // {
+    //     return $this->hasMany(Vendor_category::class);
+    // }
+
+    // public function followers()
+    // {
+    //     return $this->hasMany(Vendor_category::class);
+    // }
+
+    // public function following()
+    // {
+    //     return $this->hasMany(Vendor_category::class);
+    // }
 }

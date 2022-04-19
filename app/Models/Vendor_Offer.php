@@ -10,6 +10,10 @@ class Vendor_Offer extends Model
     use HasFactory;
     protected $table="vendor_offers";
 	
+
+    public function vendor(){
+	    return $this->belongsTo(Vendor::class);
+	}
 	
 }
 

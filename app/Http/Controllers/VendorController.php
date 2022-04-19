@@ -967,8 +967,8 @@ class VendorController extends Controller
         $offer->offer_name=$request->offer_name;
         // $offer->offer_type=$request->offer_type;
         $offer->offer=$request->offer;
-        $offer->start_from=$request->start_date;
-        $offer->start_to =$request->end_date;
+        $offer->start_from=date("Y-m-d",strtotime($request->start_date));
+        $offer->start_to =date("Y-m-d",strtotime($request->end_date));
         $offer->status ='active';
         $offer->vendor_id= $vendor_id;
 		$offer->offer_description= "hi";
@@ -1383,38 +1383,33 @@ class VendorController extends Controller
         + sin(radians(" . $request->latitude . ")) 
         * sin(radians(`shop_latitude`))))";
 	
+        $day=date("Y-m-d");
 		//confitions for check all the users
         if($vendor_id != 0)
         {
 			
-			$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')
-			->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
-			->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
-			->selectRaw("{$haversine} AS distance")
-			->where('vendor_offers.vendor_id',$vendor_id)
-			->where('vendor_offers.status','active')
-            ->where('vendors.status','Active')
-			->orderBy('distance')->paginate(10);
+			$offer_data=Vendor_Offer::with('vendor')->where('status','active')->where('start_from','<=',$day)->where('start_to','>=',date('Y-m-d'))->where('vendor_id',$vendor_id)->paginate(10);
 
-            
-		
         }
         else{
             if($request->category_id != 0)
             {
                $cate_id=$request->category_id;
-				
-				$offer_data=Vendor::where('vendors.status','Active')->join('vendor_offers','vendor_offers.vendor_id','vendors.id')
-				->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
-				->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
-				->selectRaw("{$haversine} AS distance")->whereIn('vendors.id',function($q) use($cate_id){
-                        $q->from('vendor_main_categories')->selectRaw('vendor_id')->where('category_id',$cate_id);
-                    })->having('distance','<','25')->where('vendor_offers.status','active')->orderBy('distance')->paginate(10);
+               $offer_data=Vendor::where('vendors.status','active')->join('vendor_offers','vendor_offers.vendor_id','vendors.id')
+                ->where('start_from','<=',$day)->where('start_to','>=',date('Y-m-d'))
+                ->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
+            ->whereIn('vendors.id',function($q) use($cate_id){
+                $q->from('vendor_main_categories')->selectRaw('vendor_id')->where('category_id',$cate_id);
+            })->where('vendor_offers.status','active')->selectRaw("{$haversine} AS distance")
+            ->having('distance','<','25')->orderBy('distance')
+            ->paginate(10);
+
             }
             else{
-				//return "Hello";
-                $offer_data=Vendor::where('vendors.status','Active')->join('vendor_offers','vendor_offers.vendor_id','vendors.id')
-				->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
+		
+            
+                $offer_data=Vendor::where('vendors.status','active')->join('vendor_offers','vendor_offers.vendor_id','vendors.id')
+				->where('start_from','<=',$day)->where('start_to','>=',date('Y-m-d'))
 				->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
 				->selectRaw("{$haversine} AS distance")
 				->having('distance','<','25')

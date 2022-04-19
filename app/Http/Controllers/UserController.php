@@ -34,6 +34,10 @@ use App\Jobs\ProcessPush;
 use App\Http\Controllers\UserTransactionController;
 use App\Helpers\AppHelper;
 use App\Models\user_txn_log;
+use App\Models\user_follower;
+
+use App\Models\UserOrders;
+
 class UserController extends Controller
 {
 	//fetch front category for user & vendor
@@ -494,7 +498,10 @@ class UserController extends Controller
     public function get_user_profile(Request $request)
     {
         $user_id=Auth::user()->id;
-        $user=User::find($user_id);
+        $user=User::addSelect(['vendor_follow' =>Vendors_Subsciber::selectRaw('count(*)')->where('user_id',$user_id)])
+		  ->addSelect(['followers' => user_follower::selectRaw('count(*)')->where('following_id',$user_id)])
+		  ->addSelect(['cashback' =>UserOrders::selectRaw('sum(order_discount)')->where('order_status', 'completed')->where('user_id',$user_id)])->
+		where('id',$user_id)->get();
         //return $user;
         if($user!=null)
         {
@@ -637,9 +644,8 @@ class UserController extends Controller
         * sin(radians(`shop_latitude`))))";
 		
 		if($request->sort_by == 'nearby')
-		{
-		// return "Hello";
-			$data=Vendor::with('offers')->with('today_timing')->with('favourite')
+		{	
+			$data=Vendor::with('offer')->with('today_timing')->with('favourite_my')
 			->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
 			->where('vendors.status','Active')
 			->selectRaw("{$haversine} AS distance")->whereIn('vendors.id', function ($query) use ($cat){
@@ -650,7 +656,7 @@ class UserController extends Controller
 			->paginate(10);
 		}
 		if($request->sort_by == 'high_to_low'){
-				$data=Vendor::with('offers')->with('today_timing')->with('favourite')->where('status','Active')
+				$data=Vendor::with('offer')->with('today_timing')->with('favourite_my')->where('status','Active')
 				->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
 				->where('vendors.status','Active')
 				->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
@@ -660,7 +666,7 @@ class UserController extends Controller
 				->orderBy('discount','ASC')
 				->paginate(10);
 		}else if($request->sort_by == 'low_to_high'){
-				$data=Vendor::with('offers')->with('today_timing')->with('favourite')
+				$data=Vendor::with('offer')->with('today_timing')->with('favourite_my')
 				->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
 				->where('vendors.status','Active')
 				->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
@@ -701,7 +707,11 @@ class UserController extends Controller
     	}
 		
           $user_id=$request->user_id;
+
+		  $current_user=Auth::user()->id;
           $user=User::addSelect(['vendor_follow' =>Vendors_Subsciber::selectRaw('count(*)')->where('user_id',$user_id)])
+		  ->addSelect(['is_following' => user_follower::selectRaw('count(*)')->where('follower_id',$current_user)->where('following_id',$user_id)])
+		  -> addSelect(['followers' => user_follower::selectRaw('count(*)')->where('following_id',$user_id)])
 		  ->addSelect(['feeds_count' =>Feed::selectRaw('count(*)')->where('user_type', 'user')->where('vendor_id',$user_id)])->where('id',$user_id)->get();
   
           if($user!=null)
@@ -784,6 +794,76 @@ class UserController extends Controller
 
 	}
     
+
+	//function for make user followers 
+	public function follow_user(Request $request)
+	{
+		$validator = Validator::make($request->all(), [ 
+		   'user_id' => 'required',
+			'type' => 'required',
+	   ]);
+
+	  // return Auth::user()->id;
+	   if ($validator->fails())
+	   {
+		   return response(['errors'=>$validator->errors()->all()], 422);
+	   }
+	   
+	   
+		if($request->type=='yes')
+	   {
+			user_follower::where('following_id',$request->user_id)->where('follower_id',Auth::user()->id)->delete();
+		   $feed=new user_follower;
+		   $feed->follower_id=Auth::user()->id;
+		   $feed->following_id=$request->user_id;
+
+		   if($feed->save())
+	   {
+		   $response['status']=true;
+		   $response['msg']="Saved";
+		   
+		   
+		   //notification details 
+		   $heading_user= Auth::user()->name." Started following you.";
+		   
+		   $receiver_id=$request->user_id;
+		   
+		   $post_url=env('NOTIFICATION_USER_URL')."/follower/". Auth::user()->id;
+		   $user_id=Auth::user()->id;
+		   $user_type="user";
+		   
+		   
+		   ProcessPush::dispatch($heading_user,$post_url,$receiver_id,$user_type,'');
+		   
+	   }
+	   else{
+		   $response['status']=false;
+		   $response['msg']="Not Updated";
+	   }
+	   }
+	   else if($request->type=='no'){
+
+		   $res=user_follower::where('following_id',$request->user_id)->where('follower_id',Auth::user()->id)->delete();
+
+		   if($res)
+		   {
+			   $response['status']=true;
+			   $response['msg']="UnSaved";
+		   }
+		   else{
+			   $response['status']=false;
+			   $response['msg']="Not Updated";
+		   }
+	   }
+	   else{
+		   $response['status']=false;
+			   $response['msg']="Invalid type";
+	   }
+		echo json_encode($response,JSON_UNESCAPED_SLASHES);
+
+   }
+
+
     public function fetch_home_sliders()
     {
         $data=Slider::where('status','Active')->get();
