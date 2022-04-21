@@ -663,7 +663,7 @@ public function fetch_top_category()
 					$query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
 					})
 			->having('distance','<','25')
-			->orderBy('distance')
+			->orderBy('distance')->orderBy('flat_deal_all_time','DESC')
 			->paginate(10);
 		}
 		if($request->sort_by == 'high_to_low'){
@@ -674,7 +674,7 @@ public function fetch_top_category()
 						$query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
 						})
 				->having('distance','<','25')
-				->orderBy('discount','ASC')
+				->orderBy('flat_deal_all_time','DESC')
 				->paginate(10);
 		}else if($request->sort_by == 'low_to_high'){
 				$data=Vendor::with('offer')->with('today_timing')->with('favourite_my')
@@ -684,7 +684,7 @@ public function fetch_top_category()
 						$query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
 						})
 				->having('distance','<','25')
-				->orderBy('discount','DESC')
+				->orderBy('flat_deal_all_time','ASC')
 				->paginate(10);
 		}
         //return $data;

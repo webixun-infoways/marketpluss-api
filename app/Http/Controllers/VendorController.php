@@ -1168,7 +1168,7 @@ class VendorController extends Controller
 		
 		 //fetch store details of vendor
         //  return $request->vendor_id;
-        $store_data=Vendor::where('vendors.status','Active')->with('covers:image,vendor_id')->with('today_timing')->where('id','=',$request->vendor_id)
+        $store_data=Vendor::where('vendors.status','active')->with('covers:image,vendor_id')->with('today_timing')->where('id','=',$request->vendor_id)
         ->addSelect([
         'category_id'=>Category::select('id')->where('parent_id','0')->whereIn('id',vendor_main_categories::select('category_id')->where('vendor_id',$request->vendor_id)),
         'vendor_follow' =>Vendors_Subsciber::select('vendor_id')->whereColumn('vendor_id', 'vendors.id')->where('user_id',$user_id)])
@@ -1468,7 +1468,7 @@ class VendorController extends Controller
                     ->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
                     ->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
                     ->where('vendor_offers.id',$offer_id)
-                    ->where('vendors.status','Active')
+                    ->where('vendors.status','active')
                     ->where('vendor_offers.status','!=','delete')
                     ->get();
 		foreach($offer_data as $key=>$o)
@@ -1508,13 +1508,14 @@ class VendorController extends Controller
         {
             return response(['errors'=>$validator->errors()->all()], 422);
         }
-		$vendor_id=Auth::user()->id;
-		
-		 $res=Vendor_cover::where('id',$request->cover_id)->where('vendor_id',Auth::user()->id)->delete();
+		    $vendor_id=Auth::user()->id;
+            
+            $current_pic=Vendor_cover::find($request->cover_id);
+		    $res=Vendor_cover::where('id',$request->cover_id)->where('vendor_id',Auth::user()->id)->delete();
 
             if($res)
             {
-                $current_pic=Vendor_cover::find($request->cover_id);
+               
                 //code for delete the file from storage
                 $nf= str_replace(env('APP_CDN_URL'),'',$current_pic->image);
                 Storage::disk(env('DEFAULT_STORAGE'))->delete($nf);
