@@ -40,6 +40,17 @@ use App\Models\UserOrders;
 
 class UserController extends Controller
 {
+//fetch top categories
+
+public function fetch_top_category()
+{
+  $categories = Category::where('parent_id',0)->where('status','Active')
+  ->whereIn('categories.id',function($query){
+    $query->select('category_id')->from('vendor_main_categories');
+  })
+  ->get();
+  return response()->json(['status'=>true,'data'=>$categories]);
+}	
 	//fetch front category for user & vendor
     public function send_mail(Request $request)
     {
@@ -106,7 +117,7 @@ class UserController extends Controller
 				$refer_amount = DB::table('refer_earn_setups')->get();
 				$today_earning = user_txn_log::where('user_id',Auth::user()->id)->where('txn_status','success')->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
 				if($today_earning <= $coin[0]->max_point_per_day){
-					$heading_user= $refer_amount[0]->earner." MP Coins has been initiated for review";
+					$heading_user= $refer_amount[0]->earner." MP coins has been initiated to your wallet for the feed review.";
 					//Point credit to User
 					$permission->credit_coin($user_id,$heading_user,$refer_amount[0]->earner,'success','credit');
 					
@@ -144,7 +155,7 @@ class UserController extends Controller
 				$today_earning = user_txn_log::where('user_id',Auth::user()->id)->where('txn_status','success')->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
 				//return $today_earning;
 				if($today_earning <= $coin[0]->max_point_per_day){
-					$heading_user= $coin[0]->review_point." MP Coins has been initiated for review";
+					$heading_user= $coin[0]->review_point." MP coins has been initiated to your wallet for the feed review.";
 					//Point credit to User
 					$permission->credit_coin($user_id,$heading_user,$coin[0]->review_point,'success','credit');
 					

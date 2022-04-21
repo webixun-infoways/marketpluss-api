@@ -174,7 +174,7 @@ class FeedController extends Controller
             // return $coin;
 			$today_earning = user_txn_log::where('user_id',Auth::user()->id)->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
 			if($today_earning <= $coin[0]->max_point_per_day){
-				$heading_user= $coin[0]->feed_points." MP Coins has been initiated to your account!";
+				$heading_user= $coin[0]->feed_points." MP coins has been initiated to your wallet for the feed review.";
 				$permission->credit_coin($user_id,$heading_user,$coin[0]->feed_points,'success','credit');
 				$post_url="https://marketpluss.com/";
 				ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
@@ -217,7 +217,7 @@ class FeedController extends Controller
 			
 			
 			//notification details 
-			$heading_user= Auth::user()->name." Liked your post";
+			$heading_user= Auth::user()->name." liked your post";
 			$f_data=Feed::where('id',$request->feed_id)->get(['vendor_id','user_type','tag_id']);
 			
 			$tag_id=$f_data[0]->tag_id;
@@ -238,7 +238,7 @@ class FeedController extends Controller
 			if($user_type=='user')
 			{
 				$post_url=env('NOTIFICATION_VENDOR_URL')."/feedView/".$request->feed_id;
-				$heading_user= Auth::user()->name." Liked a post you are tagged in";
+				$heading_user= Auth::user()->name." liked your post";
 				
 			
 				ProcessPush::dispatch($heading_user,$post_url,$tag_id,'vendor','');
@@ -435,7 +435,7 @@ class FeedController extends Controller
             $response['msg']="successful";
 			
 			//notification details 
-			$heading_user= Auth::user()->name." Commented on your post";
+			$heading_user= Auth::user()->name." commented on your post.";
 			$f_data=Feed::where('id',$request->feed_id)->get(['vendor_id','user_type','tag_id']);
 			
 			$tag_id=$f_data[0]->tag_id;
@@ -451,7 +451,7 @@ class FeedController extends Controller
 			if($user_type=='user')
 			{
 				$post_url=env('NOTIFICATION_VENDOR_URL')."/feedComment/".$request->feed_id;
-				$heading_user= Auth::user()->name." Commented on a post you are tagged in";
+				$heading_user= Auth::user()->name." commented on a post.";
 				
 				ProcessPush::dispatch($heading_user,$post_url,$tag_id,'vendor','');
 			
