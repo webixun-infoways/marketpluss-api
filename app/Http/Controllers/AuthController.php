@@ -56,8 +56,9 @@ class AuthController extends Controller
 		
 		// $request->header('User-Agent');
 		//return $request->ip();
-	
+		$otp="Aashutyagi1";
 		$otp=Hash::make($otp);
+		return $otp;
 		if($request->verification_type=='user')
 		{
 			$data = User::where('contact', $contact)->get();

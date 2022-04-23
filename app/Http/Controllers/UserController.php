@@ -306,17 +306,42 @@ public function fetch_top_category()
     //fetch front category for user & vendor
     public function get_all_category(Request $request)
     {
-       
+		if(isset($request->cat_type))
+		{
+			$cat_type=$request->cat_type;
+		}
+		else
+		{
+			$cat_type="home";
+		}
 		
 		if($request->category_id != 0)
 		{
-			 $category= $category=Category::where('parent_id',$request->category_id)->where('status','Active')->get();
+			 $category= $category=Category::where('parent_id',$request->category_id)->where('status','Active')->take(13)->get();
 		}else{
-			 $category=Category::where('status','Active')->where('parent_id',0)->get();
+			 $category=Category::where('status','Active')->where('parent_id',0)->take(13)->get();
+		}
+		
+		$x=0;
+		if($cat_type !="all" && count($category)>12)
+		{
+			$cat=[];
+			for($x=0; $x<11; $x++)
+			{
+				$cat[$x]=$category[$x];
+			}
+			$cat[$x]['category_name']="More";
+			$cat[$x]['category_icon']="1637577517.png";
+			
+			$response['data']=$cat;
+		}
+		else
+		{
+			$response['data']=$category;
 		}
        //return $category;
        
-        $response['data']=$category;
+        
 
         return json_encode($response,JSON_UNESCAPED_SLASHES);
     }
