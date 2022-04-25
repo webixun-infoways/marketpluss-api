@@ -32,6 +32,16 @@ class ProcessSms implements ShouldQueue
     {
 		$contact=$this->data['contact'];
 		$msg=$this->data['msg'];
-        AppHelper::send_sms($contact,$msg);
+
+        $request_type=$this->data['request_type'];
+
+        if($request_type == "send")
+        {
+            AppHelper::send_sms($contact,$msg);
+        }
+        else
+        {
+            AppHelper::send_sms2($contact,$msg);
+        }
     }
 }

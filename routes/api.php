@@ -93,7 +93,10 @@ Route::middleware('auth:api')->group(function () {
     Route::post('request_cashback_order',[UserOrderController::class,'request_cashback_order']);
     Route::post('fetch_cashback_order_details_user',[UserOrderController::class,'fetch_cashback_order_details_user']);
     Route::post('calculate_order_discount',[UserOrderController::class,'calculate_order_discount']);
-   
+    Route::get('fetch-top-category',[UserController::class,'fetch_top_category']);
+    //user following routes
+    Route::post('follow_user',[UserController::class,'follow_user']);
+
   //for logout 
     Route::post('logout_user', [AuthController::class,'logout']);
 });

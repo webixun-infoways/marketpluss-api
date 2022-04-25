@@ -12,8 +12,6 @@ class AppHelper
 			$url="http://88.99.147.101/sendSMS?username=$sms_username&message=".urlencode($msg)."&sendername=$sendername&smstype=$smstype&numbers=$contact&apikey=$apikey";
 			$ret = file_get_contents($url);
 			return $ret;
-		
-
       }
 	  
 	  public static function send_sms($contact,$msg)

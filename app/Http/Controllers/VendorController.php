@@ -360,7 +360,7 @@ class VendorController extends Controller
           $user=Vendor::with('timings')->where('id',$user_id)->get();
         
          
-          if($user!=null)
+          if(count($user)>0)
           {
               $response['status']=true;
               $response['data']=$user;
@@ -967,8 +967,8 @@ class VendorController extends Controller
         $offer->offer_name=$request->offer_name;
         // $offer->offer_type=$request->offer_type;
         $offer->offer=$request->offer;
-        $offer->start_from=$request->start_date;
-        $offer->start_to =$request->end_date;
+        $offer->start_from=date("Y-m-d",strtotime($request->start_date));
+        $offer->start_to =date("Y-m-d",strtotime($request->end_date));
         $offer->status ='active';
         $offer->vendor_id= $vendor_id;
 		$offer->offer_description= "hi";
@@ -1168,19 +1168,19 @@ class VendorController extends Controller
 		
 		 //fetch store details of vendor
         //  return $request->vendor_id;
-        $store_data=Vendor::where('vendors.status','Active')->with('covers:image,vendor_id')->with('today_timing')->where('id','=',$request->vendor_id)
+        $store_data=Vendor::with('covers')->with('shop_timing')->with('today_timing')->where('vendors.status','active')->where('id','=',$request->vendor_id)
         ->addSelect([
         'category_id'=>Category::select('id')->where('parent_id','0')->whereIn('id',vendor_main_categories::select('category_id')->where('vendor_id',$request->vendor_id)),
         'vendor_follow' =>Vendors_Subsciber::select('vendor_id')->whereColumn('vendor_id', 'vendors.id')->where('user_id',$user_id)])
         ->selectRaw("{$haversine} AS distance")->get();
         
-        if($store_data!=null)
+        if(count($store_data)>0)
         {
             $response['status']=true;
             $response['data']=$store_data;
             //$response['distance']=$distance; 
 			$response['categories']=Vendor_category::with('products')->where('vendor_id',$request->vendor_id)->get();
-            $response['shop_timing']=vendor_timing::where('vendor_id',$request->vendor_id)->get(['day_name','open_timing','close_timing']);
+            // $response['shop_timing']=vendor_timing::where('vendor_id',$request->vendor_id)->where('day_status','1')->get(['day_name','open_timing','close_timing']);
             $response['data'][0]['followers']=Vendors_Subsciber::where('vendor_id',$request->vendor_id)->count();
         }
         else{
@@ -1300,7 +1300,7 @@ class VendorController extends Controller
         
          // echo $store_data;
          // exit;
-         if($store_data!=null)
+         if(count($store_data)>0)
          {
              $response['status']=true;
              $response['data']=$store_data;
@@ -1346,7 +1346,7 @@ class VendorController extends Controller
         
          // echo $store_data;
          // exit;
-         if($store_data!=null)
+         if(count($store_data)>0)
          {
              $response['status']=true;
              $response['data']=$store_data;
@@ -1383,38 +1383,33 @@ class VendorController extends Controller
         + sin(radians(" . $request->latitude . ")) 
         * sin(radians(`shop_latitude`))))";
 	
+        $day=date("Y-m-d");
 		//confitions for check all the users
         if($vendor_id != 0)
         {
 			
-			$offer_data=Vendor::join('vendor_offers','vendor_offers.vendor_id','vendors.id')
-			->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
-			->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
-			->selectRaw("{$haversine} AS distance")
-			->where('vendor_offers.vendor_id',$vendor_id)
-			->where('vendor_offers.status','active')
-            ->where('vendors.status','Active')
-			->orderBy('distance')->paginate(10);
+			$offer_data=Vendor_Offer::with('vendor')->where('status','active')->where('start_from','<=',$day)->where('start_to','>=',date('Y-m-d'))->where('vendor_id',$vendor_id)->paginate(10);
 
-            
-		
         }
         else{
             if($request->category_id != 0)
             {
                $cate_id=$request->category_id;
-				
-				$offer_data=Vendor::where('vendors.status','Active')->join('vendor_offers','vendor_offers.vendor_id','vendors.id')
-				->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
-				->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
-				->selectRaw("{$haversine} AS distance")->whereIn('vendors.id',function($q) use($cate_id){
-                        $q->from('vendor_main_categories')->selectRaw('vendor_id')->where('category_id',$cate_id);
-                    })->having('distance','<','25')->where('vendor_offers.status','active')->orderBy('distance')->paginate(10);
+               $offer_data=Vendor::where('vendors.status','active')->join('vendor_offers','vendor_offers.vendor_id','vendors.id')
+                ->where('start_from','<=',$day)->where('start_to','>=',date('Y-m-d'))
+                ->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
+            ->whereIn('vendors.id',function($q) use($cate_id){
+                $q->from('vendor_main_categories')->selectRaw('vendor_id')->where('category_id',$cate_id);
+            })->where('vendor_offers.status','active')->selectRaw("{$haversine} AS distance")
+            ->having('distance','<','25')->orderBy('distance')
+            ->paginate(10);
+
             }
             else{
-				//return "Hello";
-                $offer_data=Vendor::where('vendors.status','Active')->join('vendor_offers','vendor_offers.vendor_id','vendors.id')
-				->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
+		
+            
+                $offer_data=Vendor::where('vendors.status','active')->join('vendor_offers','vendor_offers.vendor_id','vendors.id')
+				->where('start_from','<=',$day)->where('start_to','>=',date('Y-m-d'))
 				->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
 				->selectRaw("{$haversine} AS distance")
 				->having('distance','<','25')
@@ -1437,7 +1432,7 @@ class VendorController extends Controller
 		}
 		//return $store_data;
 		
-        if($offer_data!=null)
+        if(count($offer_data)>0)
         {
             $response['status']=true;
             $response['data']=$offer_data;
@@ -1473,7 +1468,7 @@ class VendorController extends Controller
                     ->whereDate('vendor_offers.start_to','>=',date('Y-m-d'))
                     ->select(['vendors.*','vendor_offers.offer_description','vendor_offers.offer_name','vendor_offers.offer','vendor_offers.start_from','vendor_offers.start_to','vendor_offers.id as offer_id'])
                     ->where('vendor_offers.id',$offer_id)
-                    ->where('vendors.status','Active')
+                    ->where('vendors.status','active')
                     ->where('vendor_offers.status','!=','delete')
                     ->get();
 		foreach($offer_data as $key=>$o)
@@ -1486,7 +1481,7 @@ class VendorController extends Controller
 		}
 		//return $store_data;
 		
-        if($offer_data!=null)
+        if(count($offer_data)>0)
         {
             $response['status']=true;
             $response['data']=$offer_data;
@@ -1513,13 +1508,14 @@ class VendorController extends Controller
         {
             return response(['errors'=>$validator->errors()->all()], 422);
         }
-		$vendor_id=Auth::user()->id;
-		
-		 $res=Vendor_cover::where('id',$request->cover_id)->where('vendor_id',Auth::user()->id)->delete();
+		    $vendor_id=Auth::user()->id;
+            
+            $current_pic=Vendor_cover::find($request->cover_id);
+		    $res=Vendor_cover::where('id',$request->cover_id)->where('vendor_id',Auth::user()->id)->delete();
 
             if($res)
             {
-                $current_pic=Vendor_cover::find($request->cover_id);
+               
                 //code for delete the file from storage
                 $nf= str_replace(env('APP_CDN_URL'),'',$current_pic->image);
                 Storage::disk(env('DEFAULT_STORAGE'))->delete($nf);
@@ -1553,7 +1549,7 @@ class VendorController extends Controller
 		}
 		
 		//return count($offer_data);
-        if($offer_data!=null)
+        if(count($offer_data)>0)
         {
             $response['status']=true;
             $response['data']=$offer_data;
