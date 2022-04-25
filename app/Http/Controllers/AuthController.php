@@ -28,6 +28,15 @@ class AuthController extends Controller
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
 		
+		//check the request its one time or resend
+		if(isset($request->request_type))
+		{
+			$request_type=$request->request_type;
+		}
+		else
+		{
+			$request_type="send";
+		}
 		$contact=$request->contact;
 		
 		if(env("APP_DEBUG")) // condition to check this is beta or release
@@ -46,7 +55,8 @@ class AuthController extends Controller
 			
 			$data['contact']=$contact;
 			$data['msg']=$msg;
-		
+			
+			$data['request_type']=$request_type;
 			//AppHelper::send_sms2($data['contact'],$msg);
 			//jobs for end the sms 
 			ProcessSms::dispatch($data);
@@ -56,9 +66,7 @@ class AuthController extends Controller
 		
 		// $request->header('User-Agent');
 		//return $request->ip();
-		$otp="Aashutyagi1";
 		$otp=Hash::make($otp);
-		return $otp;
 		if($request->verification_type=='user')
 		{
 			$data = User::where('contact', $contact)->get();
@@ -92,8 +100,7 @@ class AuthController extends Controller
 			return response()->json(['error' => 'Unauthorized Access!'], 401);
 		}
 		
-		$msg = "Use $otp as your OTP for shvetdhardhara account verification. This is confidential. Please, do not share this with anyone. Webixun infoways PVT LTD ";
-		
+	
 		// $obj=new  ComponentConfig();
 		// $image_data= $obj->send_sms($contact,$msg);
 

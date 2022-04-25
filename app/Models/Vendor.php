@@ -79,6 +79,12 @@ class Vendor extends Authenticatable
 		return $this->hasMany(vendor_timing::class)->where('day_status','1');
 	}
 	
+
+    public function shop_timing(){
+		return $this->hasMany(vendor_timing::class);
+	}
+
+
 	public function today_timing(){
 		
 		$day=date("D");

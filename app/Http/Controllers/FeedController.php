@@ -84,6 +84,8 @@ class FeedController extends Controller
     	{
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
+
+        
         //return Auth::user()->id;
         $feed=new Feed;
         //$feed->feed_title=$request->title;

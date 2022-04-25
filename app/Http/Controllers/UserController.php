@@ -539,7 +539,7 @@ public function fetch_top_category()
 		  ->addSelect(['cashback' =>UserOrders::selectRaw('sum(order_discount)')->where('order_status', 'completed')->where('user_id',$user_id)])->
 		where('id',$user_id)->get();
         //return $user;
-        if($user!=null)
+        if(count($user)>0)
         {
             $response['status']=true;
             $response['data']=$user;
@@ -750,7 +750,7 @@ public function fetch_top_category()
 		  -> addSelect(['followers' => user_follower::selectRaw('count(*)')->where('following_id',$user_id)])
 		  ->addSelect(['feeds_count' =>Feed::selectRaw('count(*)')->where('user_type', 'user')->where('vendor_id',$user_id)])->where('id',$user_id)->get();
   
-          if($user!=null)
+          if(count($user)>0)
           {
               $response['status']=true;
               $response['data']=$user;

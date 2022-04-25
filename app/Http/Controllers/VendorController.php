@@ -360,7 +360,7 @@ class VendorController extends Controller
           $user=Vendor::with('timings')->where('id',$user_id)->get();
         
          
-          if($user!=null)
+          if(count($user)>0)
           {
               $response['status']=true;
               $response['data']=$user;
@@ -1168,19 +1168,19 @@ class VendorController extends Controller
 		
 		 //fetch store details of vendor
         //  return $request->vendor_id;
-        $store_data=Vendor::where('vendors.status','active')->with('covers:image,vendor_id')->with('today_timing')->where('id','=',$request->vendor_id)
+        $store_data=Vendor::with('covers')->with('shop_timing')->with('today_timing')->where('vendors.status','active')->where('id','=',$request->vendor_id)
         ->addSelect([
         'category_id'=>Category::select('id')->where('parent_id','0')->whereIn('id',vendor_main_categories::select('category_id')->where('vendor_id',$request->vendor_id)),
         'vendor_follow' =>Vendors_Subsciber::select('vendor_id')->whereColumn('vendor_id', 'vendors.id')->where('user_id',$user_id)])
         ->selectRaw("{$haversine} AS distance")->get();
         
-        if($store_data!=null)
+        if(count($store_data)>0)
         {
             $response['status']=true;
             $response['data']=$store_data;
             //$response['distance']=$distance; 
 			$response['categories']=Vendor_category::with('products')->where('vendor_id',$request->vendor_id)->get();
-            $response['shop_timing']=vendor_timing::where('vendor_id',$request->vendor_id)->where('day_status','1')->get(['day_name','open_timing','close_timing']);
+            // $response['shop_timing']=vendor_timing::where('vendor_id',$request->vendor_id)->where('day_status','1')->get(['day_name','open_timing','close_timing']);
             $response['data'][0]['followers']=Vendors_Subsciber::where('vendor_id',$request->vendor_id)->count();
         }
         else{
@@ -1300,7 +1300,7 @@ class VendorController extends Controller
         
          // echo $store_data;
          // exit;
-         if($store_data!=null)
+         if(count($store_data)>0)
          {
              $response['status']=true;
              $response['data']=$store_data;
@@ -1346,7 +1346,7 @@ class VendorController extends Controller
         
          // echo $store_data;
          // exit;
-         if($store_data!=null)
+         if(count($store_data)>0)
          {
              $response['status']=true;
              $response['data']=$store_data;
@@ -1432,7 +1432,7 @@ class VendorController extends Controller
 		}
 		//return $store_data;
 		
-        if($offer_data!=null)
+        if(count($offer_data)>0)
         {
             $response['status']=true;
             $response['data']=$offer_data;
@@ -1481,7 +1481,7 @@ class VendorController extends Controller
 		}
 		//return $store_data;
 		
-        if($offer_data!=null)
+        if(count($offer_data)>0)
         {
             $response['status']=true;
             $response['data']=$offer_data;
@@ -1549,7 +1549,7 @@ class VendorController extends Controller
 		}
 		
 		//return count($offer_data);
-        if($offer_data!=null)
+        if(count($offer_data)>0)
         {
             $response['status']=true;
             $response['data']=$offer_data;
