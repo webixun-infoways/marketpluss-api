@@ -79,13 +79,21 @@ public function fetch_top_category()
             'rating' => 'required', 
             'vendor_id' => 'required',
 			'review' => 'nullable',
-			'review_type' => 'nullable',
         ]);
 
 		if ($validator->fails())
     	{
         	return response(['errors'=>$validator->errors()->all()], 422);
     	}
+
+		if(isset($request->review_type))
+		{
+			$review_type=$request->review_type;
+		}
+		else
+		{
+			$review_type="search";
+		}
 		$user_id = Auth::user()->id;
 		$user_name = Auth::user()->name;
 		$vr=new vendor_rating;
@@ -98,7 +106,7 @@ public function fetch_top_category()
 		$vr->review_count = 'yes';
 		
 		//It is checked for it comes from scan or any other mode
-		$vr->review_from = $request->review_type;
+		$vr->review_from = $review_type;
 		$res = vendor_rating::where('vendor_id',$request->vendor_id)->where('user_id',$user_id)->update(['review_count'=>'no']);
 		try{
 			$permission=new UserTransactionController();
@@ -131,25 +139,21 @@ public function fetch_top_category()
 				}
 				
 				if($request->review_type == 'scan'){
-					$given_coin = ($refer_amount[0]->referrer/3);
+					$given_coin = $refer_amount[0]->referrer;
 				}else{
 					$given_coin = $refer_amount[0]->referrer;
 				}
 				//return $given_coin;
 				$refer_by = user_refer_log::where('user_id',$user_id)->orderBy('id','ASC')->get();
 				//return $refer_by;
-				if(count($refer_by) == 1){
+				if(count($refer_by) >0 ){
 					$heading_user= $given_coin." MP Coins has been initiated for review done by ".$user_name;
 					//Point credit to User
 					$permission->credit_coin($refer_by[0]->refer_id,$heading_user,$given_coin,'success','credit');
 					
-					
-					$heading_vendor= $user_name." gives you a rating";
 					$post_url=" ";
 					//Notification to User
-					ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
-					//Notification to vendors
-					ProcessPush::dispatch($heading_vendor,$post_url,$request->vendor_id,'vendor','');
+					ProcessPush::dispatch($heading_user,$post_url,$refer_by[0]->refer_id,'user','');
 				}
 			}else{
 				$today_earning = user_txn_log::where('user_id',Auth::user()->id)->where('txn_status','success')->whereDate('created_at',date('Y-m-d'))->sum('txn_amount');
@@ -538,6 +542,8 @@ public function fetch_top_category()
 		  ->addSelect(['followers' => user_follower::selectRaw('count(*)')->where('following_id',$user_id)])
 		  ->addSelect(['cashback' =>UserOrders::selectRaw('sum(order_discount)')->where('order_status', 'completed')->where('user_id',$user_id)])->
 		where('id',$user_id)->get();
+
+		$user=User::where('id',$user_id)->get();
         //return $user;
         if(count($user)>0)
         {
