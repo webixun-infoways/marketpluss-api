@@ -96,6 +96,7 @@ class FeedController extends Controller
 		$feed->tag_id=$request->tag_id;
         if($feed->save())
         {
+            $last_feed_id=$feed->id;
             $response['status']=true;
 			$files=$request->file('feed_file');
             if(is_array($files)){
@@ -164,13 +165,15 @@ class FeedController extends Controller
 			->addSelect(['shop_name' => Vendor::where('status','Active')->select('shop_name')->whereColumn('id', 'feeds.vendor_id')->where('feeds.user_type','vendor'),'vendor_name' => Vendor::where('status','Active')->select('name')->whereColumn('id', 'feeds.tag_id'),'vendor_profile' => Vendor::where('status','Active')->select('profile_pic')->whereColumn('id', 'feeds.tag_id'),'vendor_area' => Vendor::where('status','Active')->select('area')->whereColumn('id', 'feeds.tag_id')])
 			->addSelect(['feed_like' => Feed_like::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])
 			->addSelect(['feed_save' => Feed_Save::select('feed_id')->whereColumn('feed_id', 'feeds.id')->where('user_id',$user_id)])->where('feed_status','active')
-			->orderBy('id','desc')->first();
+			->where('feeds.id',$last_feed_id)->orderBy('id','desc')->first();
 
             $response['msg']= "Feed added!";
 			
 			$response['last_added_data']= $last_added_data;
 			
-			//Cashback Initiated
+            if($request->user_type != 'vendor')
+            {
+                //Cashback Initiated
 			$permission=new UserTransactionController();
 			$coin = point_level::get();
             // return $coin;
@@ -181,6 +184,9 @@ class FeedController extends Controller
 				$post_url="https://marketpluss.com/";
 				ProcessPush::dispatch($heading_user,$post_url,$user_id,'user','');
 			}
+
+            }
+			
 			
         }
         else{
