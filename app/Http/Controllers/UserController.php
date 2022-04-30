@@ -143,7 +143,8 @@ public function fetch_top_category()
 				}else{
 					$given_coin = $refer_amount[0]->referrer;
 				}
-				//return $given_coin;
+				
+				//fetch user if refer by the anyone
 				$refer_by = user_refer_log::where('user_id',$user_id)->orderBy('id','ASC')->get();
 				//return $refer_by;
 				if(count($refer_by) >0 ){
