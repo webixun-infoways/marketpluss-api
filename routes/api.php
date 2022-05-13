@@ -68,6 +68,8 @@ Route::middleware('auth:api')->group(function () {
 	Route::post('user_add_fevourite', [UserController::class,'user_add_favourite']);
 	Route::post('user_get_fevourite', [UserController::class,'user_get_favourite']);
     
+    Route::post('get_vendors_for_payment', [UserTransactionController::class,'get_vendors_for_payment']);
+    
 	//Feed related routes 
     Route::post('get_user_feeds', [FeedController::class,'user_feed_view']);
 	Route::post('delete_feed', [FeedController::class,'delete_feed']);
