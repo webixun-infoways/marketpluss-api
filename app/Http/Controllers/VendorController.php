@@ -1179,7 +1179,7 @@ class VendorController extends Controller
             $response['status']=true;
             $response['data']=$store_data;
             //$response['distance']=$distance; 
-			$response['categories']=Vendor_category::with('products')->where('vendor_id',$request->vendor_id)->get();
+			$response['categories']=Vendor_category::with('products')->where('vendor_id',$request->vendor_id)->where('status','active')->get();
             // $response['shop_timing']=vendor_timing::where('vendor_id',$request->vendor_id)->where('day_status','1')->get(['day_name','open_timing','close_timing']);
             $response['data'][0]['followers']=Vendors_Subsciber::where('vendor_id',$request->vendor_id)->count();
         }

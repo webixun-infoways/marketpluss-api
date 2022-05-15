@@ -143,7 +143,8 @@ public function fetch_top_category()
 				}else{
 					$given_coin = $refer_amount[0]->referrer;
 				}
-				//return $given_coin;
+				
+				//fetch user if refer by the anyone
 				$refer_by = user_refer_log::where('user_id',$user_id)->orderBy('id','ASC')->get();
 				//return $refer_by;
 				if(count($refer_by) >0 ){
@@ -739,7 +740,69 @@ public function fetch_top_category()
         echo json_encode($response,JSON_UNESCAPED_SLASHES); 
     }
 	
-	
+	//get_vendor flat 
+
+	//get vendor data 
+    public function get_flat_offers(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+           'category_id'=>'required',
+            'latitude'=>'required',
+            'longitude'=>'required',
+			      'sort_by'=>'required'
+        ]);
+
+		if ($validator->fails())
+    	{
+        	return response(['errors'=>$validator->errors()->all()], 422);
+    	}
+
+        $cat= $request->category_id;
+
+        $haversine = "(6371 * acos(cos(radians(" . $request->latitude . ")) 
+        * cos(radians(`shop_latitude`)) 
+        * cos(radians(`shop_longitude`) 
+        - radians(" . $request->longitude . ")) 
+        + sin(radians(" . $request->latitude . ")) 
+        * sin(radians(`shop_latitude`))))";
+		
+		if($cat == 0)
+		{	
+			$data=Vendor::with('offer')->with('today_timing')->with('favourite_my')
+			->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
+			->where('vendors.status','Active')
+			->selectRaw("{$haversine} AS distance")->having('distance','<','25')
+			->orderBy('distance')->orderBy('flat_deal_all_time','DESC')
+			->paginate(10);
+		}
+		else{
+				$data=Vendor::with('offer')->with('today_timing')->with('favourite_my')->where('status','Active')
+				->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
+				->where('vendors.status','Active')
+				->selectRaw("{$haversine} AS distance")->addSelect(['discount' => Vendor_Offer::select('offer')->whereColumn('vendor_id', 'vendors.id')->orderBy('offer','ASC')->limit('1')])->whereIn('vendors.id', function ($query) use ($cat){
+						$query->from('vendor_main_categories')->select('vendor_id')->where('category_id',$cat);
+						})
+				->having('distance','<','25')
+				->orderBy('flat_deal_all_time','DESC')
+				->paginate(10);
+		}
+        //return $data;
+		
+        if(count($data)>0)
+        {
+            $response['status']=true;
+            $response['data']=$data;
+        }
+        else{
+            
+            $response['status']=false;
+            $response['msg']="No Data Found.";
+        }
+
+        echo json_encode($response,JSON_UNESCAPED_SLASHES); 
+    }
+
+
 	//get user profile 
       public function fetch_user_profile_different(Request $request)
       {
