@@ -67,9 +67,9 @@ Route::middleware('auth:api')->group(function () {
 	
 	Route::post('user_add_fevourite', [UserController::class,'user_add_favourite']);
 	Route::post('user_get_fevourite', [UserController::class,'user_get_favourite']);
-    
-    Route::post('get_vendors_for_payment', [UserTransactionController::class,'get_vendors_for_payment']);
-    
+
+    Route::post('get_vendors_for_payment',[UserOrderController::class,'get_vendors_for_payment']);
+
 	//Feed related routes 
     Route::post('get_user_feeds', [FeedController::class,'user_feed_view']);
 	Route::post('delete_feed', [FeedController::class,'delete_feed']);
@@ -94,11 +94,18 @@ Route::middleware('auth:api')->group(function () {
 	Route::post('get_user_transations',[UserController::class,'get_user_transations']);
 
 	Route::post('transferTobank',[UserTransactionController::class,'transfer_to_bank']);
+    Route::post('verifyTransaction',[UserTransactionController::class,'verifyTransaction']);
+    
     Route::post('fetch_orders_user',[UserOrderController::class,'fetch_orders_user']);
     Route::post('request_cashback_order',[UserOrderController::class,'request_cashback_order']);
     Route::post('fetch_cashback_order_details_user',[UserOrderController::class,'fetch_cashback_order_details_user']);
     Route::post('calculate_order_discount',[UserOrderController::class,'calculate_order_discount']);
+    Route::post('payonlineorder',[UserOrderController::class,'payonlineorder']);
+    Route::post('initiateOrderTransaction',[UserOrderController::class,'initiateOrderTransaction']);
+
     Route::get('fetch-top-category',[UserController::class,'fetch_top_category']);
+   
+   
     //user following routes
     Route::post('follow_user',[UserController::class,'follow_user']);
 

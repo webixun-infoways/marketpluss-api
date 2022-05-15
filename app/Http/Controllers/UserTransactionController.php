@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use App\Models\permission_page;
@@ -18,6 +17,8 @@ use Illuminate\Support\Facades\Crypt;
 use Carbon\Carbon;
 use Session;
 use App\Jobs\ProcessPush;
+
+use paytm\paytmchecksum\paytmchecksum;
 
 class UserTransactionController extends Controller
 {
@@ -52,8 +53,8 @@ class UserTransactionController extends Controller
 	   
 	}
 	
-	
-	public function transfer_to_bank(Request $request)
+
+	public function verifyTransaction(Request $request)
 	{
 		$validator = Validator::make($request->all(), [ 
              'upi_id'=> 'required',
@@ -63,7 +64,165 @@ class UserTransactionController extends Controller
 		 
 		 if ($validator->fails())
          {
-             return response(['errors'=>$validator->errors()->all()], 422);
+             return response(['error'=>$validator->errors()->all()], 422);
+         }
+		 
+		 $user_id=Auth::user()->id;
+		 $txn_id=$user_id.time().uniqid(mt_rand(),true);
+		 
+		 if(Auth::user()->wallet>=$request->transfer_amount)
+		 {
+			 $mid=env("PAYTM_MID");
+			 $key=env("PAYTM_MERCHANT_KEY");
+			 $paytmParams = array();
+			
+			 $paytmParams["body"] = array(
+				"mid"                  => $mid,
+				"referenceId"          => "ref_987654321",
+				"cardPreAuthType"      => "STANDARD_AUTH",
+				"preAuthBlockSeconds"  => "12321"
+				);
+
+				/*
+				* Generate checksum by parameters we have in body
+				* Find your Merchant Key in your Paytm Dashboard at https://dashboard.paytm.com/next/apikeys 
+				*/
+				$checksum = PaytmChecksum::generateSignature(json_encode($paytmParams["body"], JSON_UNESCAPED_SLASHES), $key);
+
+				$paytmParams["head"] = array(
+					"tokenType"     => "CHECKSUM",
+					"token"	    => $checksum
+				);
+
+				$post_data = json_encode($paytmParams, JSON_UNESCAPED_SLASHES);
+
+				if(env("APP_DEBUG")) // condition to check this is beta or release
+				{
+					$url = "https://securegw-stage.paytm.in/theia/api/v1/token/create?mid=$mid&referenceId=ref_987654321";
+
+				}
+				else
+				{
+					$url = "https://securegw.paytm.in/theia/api/v1/token/create?mid=$mid&orderId=ORDERID_98765";
+
+				}
+				/* for Staging */
+				
+				/* for Production */
+				
+				$ch = curl_init($url);
+				curl_setopt($ch, CURLOPT_POST, 1);
+				curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+				curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json")); 
+				$response = curl_exec($ch);
+
+				$response=json_decode($response);
+				// print_r($response->body->accessToken);
+
+				$access_token=$response->body->accessToken;
+
+
+				$paytmParams = array();
+
+				$paytmParams["body"] = array(
+					"vpa"      => $request->upi_id,
+					"mid"    => $mid,
+				);
+
+				$paytmParams["head"] = array(
+					"tokenType"     => "ACCESS",
+					'token'         => $access_token
+				);
+
+				$post_data = json_encode($paytmParams, JSON_UNESCAPED_SLASHES);
+
+				if(env("APP_DEBUG")) // condition to check this is beta or release
+				{
+					$url = "https://securegw-stage.paytm.in/theia/api/v1/vpa/validate?mid=$mid&referenceId=ref_987654321";
+				}
+				else
+				{
+					$url = "https://securegw.paytm.in/theia/api/v1/vpa/validate?mid=$mid&referenceId=ref_987654321";
+			
+				}
+
+				/* for Staging */
+				//
+				/* for Production */
+				$ch = curl_init($url);
+				curl_setopt($ch, CURLOPT_POST, 1);
+				curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
+				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+				curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+					"Content-Type: application/json"
+				));
+				$response = curl_exec($ch);
+
+				$response=json_decode($response);
+
+				if($response->body->valid)
+				{
+					$point=point_level::all();
+
+					$bank_transfer_limit=$point[0]->bank_transfer_limit;
+					$txn_charges=$point[0]->txn_charges;
+
+					if($request->transfer_amount>=$bank_transfer_limit)
+					{
+						$transfer_amount=$request->transfer_amount;
+						$processing_fee=$txn_charges;
+						$process_amount=($request->transfer_amount*$processing_fee/100);
+						$final_amount=$transfer_amount-$process_amount;
+
+						//update upi_id to profile
+						$user=User::find($user_id);
+			   			$user->upi_id=$request->upi_id;
+			   			$user->save();
+
+						$response=array();
+						$response['status']=true;
+						$response['data']['transfer_amount']=$transfer_amount;
+						$response['data']['processing_fee']=$processing_fee."%";
+						$response['data']['processing_amount']=$process_amount;
+						$response['data']['final_amount']=$final_amount;
+						$response['data']['upi']=$request->upi_id;
+						$response['data']['balance']=Auth::user()->wallet-$request->transfer_amount;
+						return json_encode($response);
+					}
+					else
+					{
+						return response()->json(['status'=>false,'error'=>'Your Amount should be grator then '.$bank_transfer_limit]);
+					}
+				}
+				else
+				{
+					return response()->json(['status'=>false,'error'=>'Invalid UpiID, Please try agian']);
+				}
+			   
+			   
+		   }
+		   
+		 
+		 else
+		 {
+			    return response()->json(['status'=>false,'error'=>'Balance amount is low!']);
+		 }
+	   
+	   }
+
+
+	
+	public function transfer_to_bank(Request $request)
+	{
+		$validator = Validator::make($request->all(), [ 
+			 'transfer_amount'=> 'required'
+         ]);
+		 
+		 
+		 if ($validator->fails())
+         {
+             return response(['error'=>$validator->errors()->all()], 422);
          }
 
 		 return response()->json(['status'=>false,'error'=>'Something Went Wrong!']);
@@ -88,10 +247,10 @@ class UserTransactionController extends Controller
 			   //update user wallet
 			   $user=User::find($user_id);
 			   $user->wallet=$user->wallet-$request->transfer_amount;
-			   $user->upi_id=$request->upi_id;
 			   $user->save();
 			   return response()->json(['status'=>true,'msg'=>'Cashback Intitiated, It will take 36-48 Hours to reflect.']);
 		   	}else{
+
 			   return response()->json(['status'=>false,'error'=>'Something Went Wrong!']);
 		   	}
 		 }

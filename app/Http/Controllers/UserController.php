@@ -508,6 +508,11 @@ public function fetch_top_category()
 			$search_vendor=Vendor::where('status','Active')->where('shop_name','like', '%' . $q . '%')->limit(5)->get();
 			$response['vendor']=$search_vendor;
 		}
+		else if($request->search_type == 'payment')
+		{
+			$search_vendor=Vendor::where('status','Active')->where('shop_name','like', '%' . $q . '%')->where('payment_accept',1)->limit(5)->get();
+			$response['vendor']=$search_vendor;
+		}
 		else{
 			
 			$search_product=Vendor_Product::where('product_name','like', '%' . $q . '%')->limit(5)->get();

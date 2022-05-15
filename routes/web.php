@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ReferandEarn;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserOrderController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -24,6 +25,7 @@ Route::get('/send_mail', [UserController::class,'send_mail']);
 
 Route::get('/{refer_id}',[ReferandEarn::class,'genrateRequest']);
 
+Route::get('/VerifyOrderTransaction',[UserOrderController::class,'VerifyOrderTransaction']);
 
 
 // Route::get('login', [AuthController::class,'unauthorized']);
