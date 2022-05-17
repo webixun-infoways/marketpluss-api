@@ -7,7 +7,7 @@
     <title>Payment Process</title>
 </head>
 <body >
-    <form method="post" type="redirect" action="https://securegw-stage.paytm.in/theia/api/v1/processTransaction?mid={{env('PAYTM_MID')}}&orderId={{$order_id}}">
+    <form method="post" type="redirect" action="{{env('APP_DEBUG')}}processTransaction?mid={{env('PAYTM_MID')}}&orderId={{$order_id}}">
         <input type="text" name="mid"  value="{{env('PAYTM_MID')}}" />
         <input type="text" name="orderId"  value="{{$order_id}}" />
         <input type="text" name="txnToken"  value="{{$txn_token}}" />

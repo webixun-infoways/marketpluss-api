@@ -400,7 +400,7 @@ class UserOrderController extends Controller
 
                 $res['status']=true;
                 $res['msg']="Sss";
-                $res['action']="http://192.168.1.14:8000/ProcessTransactionUPI?txn_token=".$response->body->txnToken."&&mm_token=".$method_id."&&orderToken=".$order_id;
+                $res['action']="https://beta-api.marketpluss.com/ProcessTransactionUPI?txn_token=".$response->body->txnToken."&&mm_token=".$method_id."&&orderToken=".$order_id;
             }
            else
            {
