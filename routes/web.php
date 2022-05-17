@@ -20,6 +20,7 @@ Route::get('/', function () {
     echo "Welcome to MarketPluss.";
 });
 
+Route::get('/ProcessTransactionUPI', [UserOrderController::class,'ProcessTransactionUPI']);
 
 Route::get('/send_mail', [UserController::class,'send_mail']);
 

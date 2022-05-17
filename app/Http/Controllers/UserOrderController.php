@@ -23,11 +23,13 @@ use App\Models\Feed_Save;
 use App\Models\Feed;
 use App\Models\vendor_timing;
 use App\Models\user_orders_txn_log;
+use App\Models\user_payment_method;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use paytm\paytmchecksum\paytmchecksum;
 use Storage;
+use Illuminate\Support\Str;
 
 class UserOrderController extends Controller
 {
@@ -231,7 +233,7 @@ class UserOrderController extends Controller
                 {
                     $txn_id=$user_id.time().uniqid(mt_rand(),true);
 
-                    $txn=new user_order_txn_log;
+                    $txn=new user_orders_txn_log;
                     $txn->order_id=$order_id;
                     $txn->txn_amount=$final_amount;
                     $txn->txn_method='wallet';
@@ -301,6 +303,7 @@ class UserOrderController extends Controller
     {
         $validator = Validator::make($request->all(), [ 
             'order_id'=>'required',
+            'upi_id'=>'required'
         ]);
 
         if ($validator->fails())
@@ -373,13 +376,42 @@ class UserOrderController extends Controller
         // // print_r($response);
         if(isset($response->body->txnToken))
         {
-            $res['status']=true;
-            $res['txn_token']=$response->body->txnToken;
+
+            $txn_id=Auth::user()->id.time().uniqid(mt_rand(),true);
+            
+            $txn=new user_orders_txn_log;
+            $txn->order_id=$order[0]->id;
+            $txn->txn_amount=$order[0]->total_amount;
+            $txn->txn_method='UPI';
+            $txn->txn_status='failed';
+            $txn->payment_txn_id=$txn_id;
+            
+            
+            if($txn->save())
+            {
+               $method_id= Str::uuid();
+               $method=new user_payment_method;
+               $method->method_id=$method_id;
+               $method->user_id=Auth::user()->id;
+               $method->payment_method=$request->upi_id;
+               $method->method_type="UPI";
+
+                $method->save();
+
+                $res['status']=true;
+                $res['msg']="Sss";
+                $res['action']="http://192.168.1.14:8000/ProcessTransactionUPI?txn_token=".$response->body->txnToken."&&mm_token=".$method_id."&&orderToken=".$order_id;
+            }
+           else
+           {
+            $res['status']=false;
+            $res['msg']="invalid request, try again2";
+           }
         }
         else
         {
-            $resp['status']=false;
-            $resp['msg']="invalid request, try again";
+            $res['status']=false;
+            $res['msg']="invalid request, try again";
         }
         }
         else
@@ -389,6 +421,26 @@ class UserOrderController extends Controller
         }
 
         return json_encode($res,JSON_UNESCAPED_SLASHES); 
+    }
+
+
+    public function ProcessTransactionUPI(Request $request)
+    {
+        $txn_id=$request->txn_token;
+        $order_id=$request->orderToken;
+        $mm_method=$request->mm_token;
+
+        $method=user_payment_method::where('method_id',$mm_method)->get();
+        if(count($method)>0)
+        {
+            $mm=$method[0]->payment_method;
+            return View('ProcessTransactionUPI')->with('txn_token',$txn_id)->with('order_id',$order_id)->with('method',$mm);
+        }
+        else
+        {
+            return "inavlid";
+        }
+       
     }
 
      //get vendor data 

@@ -7,7 +7,6 @@ use App\Models\permission_page;
 use App\Models\point_level;
 use App\Models\user_txn_log;
 use App\Models\User;
-use App\Models\Vendor;
 use App\Models\Notification;
 use App\Models\permission_user_page;
 use Illuminate\Support\Facades\Hash;
@@ -18,7 +17,7 @@ use Carbon\Carbon;
 use Session;
 use App\Jobs\ProcessPush;
 
-use paytm\paytmchecksum\paytmchecksum;
+use paytm\paytmchecksum\PaytmChecksum;
 
 class UserTransactionController extends Controller
 {
@@ -192,7 +191,7 @@ class UserTransactionController extends Controller
 					}
 					else
 					{
-						return response()->json(['status'=>false,'error'=>'Your Amount should be grator then '.$bank_transfer_limit]);
+						return response()->json(['status'=>false,'error'=>'Your Amount should be greater than '.$bank_transfer_limit]);
 					}
 				}
 				else
@@ -224,94 +223,56 @@ class UserTransactionController extends Controller
          {
              return response(['error'=>$validator->errors()->all()], 422);
          }
-
-		 return response()->json(['status'=>false,'error'=>'Something Went Wrong!']);
 		 
 		 $user_id=Auth::user()->id;
 		 $txn_id=$user_id.time().uniqid(mt_rand(),true);
 		 
-		if(Auth::user()->wallet>=$request->transfer_amount)
-		{
-			 
-		  	$res = new user_txn_log;
-		   	$res->user_id = $user_id;
-		   	$res->txn_id = $txn_id;
-		   	$res->txn_amount = $request->transfer_amount;
-		   	$res->txn_status = 'pending';
-		   	$res->txn_type = 'debit';
-			
-			   $msg = "Money has been successfully transfered to your bank account";
-		   	$res->comment=$msg;
-		   	//$res->save();
-		   	if($res->save()){
-			   //update user wallet
-			   $user=User::find($user_id);
-			   $user->wallet=$user->wallet-$request->transfer_amount;
-			   $user->save();
-			   return response()->json(['status'=>true,'msg'=>'Cashback Intitiated, It will take 36-48 Hours to reflect.']);
-		   	}else{
+		$point=point_level::all();
+		$bank_transfer_limit=$point[0]->bank_transfer_limit;
+		$txn_charges=$point[0]->txn_charges;
 
-			   return response()->json(['status'=>false,'error'=>'Something Went Wrong!']);
-		   	}
-		 }
-		 else
-		 {
+		if($request->transfer_amount>=$bank_transfer_limit)
+		{
+			if(Auth::user()->wallet>=$request->transfer_amount)
+		 	{
+		
+				$res = new user_txn_log;
+				$res->user_id = $user_id;
+				$res->txn_id = $txn_id;
+				$res->txn_amount = $request->transfer_amount;
+				$res->txn_status = 'pending';
+				$res->txn_type = 'debit';
+				$msg = "Money has been successfully transfered to your bank account";
+				$res->comment=$msg;
+		   
+				//$res->save();
+		   		if($res->save())
+				{
+					//update user wallet
+					$user=User::find($user_id);
+					$user->wallet=$user->wallet-$request->transfer_amount;
+					$user->save();
+					
+					return response()->json(['status'=>true,'error'=>'Cashback Intitiated!']);
+		   		}
+				else
+				{
+			   		return response()->json(['status'=>false,'error'=>'Something Went Wrong!']);
+		   		}
+		 	}
+		 	else
+		 	{
 			    return response()->json(['status'=>false,'error'=>'Balance amount is low!']);
-		 }
-	   
-	   }
-
-
-	   //get_payments for vendors
-
-	    //get vendor data 
-		public function get_vendors_for_payment(Request $request)
-		{
-			$validator = Validator::make($request->all(), [ 
-				'latitude'=>'required',
-				'longitude'=>'required',
-			]);
-	
-			if ($validator->fails())
-			{
-				return response(['errors'=>$validator->errors()->all()], 422);
-			}
-	
-	
-			$haversine = "(6371 * acos(cos(radians(" . $request->latitude . ")) 
-			* cos(radians(`shop_latitude`)) 
-			* cos(radians(`shop_longitude`) 
-			- radians(" . $request->longitude . ")) 
-			+ sin(radians(" . $request->latitude . ")) 
-			* sin(radians(`shop_latitude`))))";
-			
-			
-				$data=Vendor::with('offer')->with('today_timing')->with('favourite_my')
-				->select("vendors.is_prime","vendors.status","vendors.id",'vendors.shop_name','vendors.profile_pic','vendors.address','vendors.current_rating','vendors.flat_deal_all_time')
-				->where('vendors.status','Active')->where('vendors.payment_accept',1)->selectRaw("{$haversine} AS distance")
-				->having('distance','<','25')
-				->orderBy('distance')->orderBy('flat_deal_all_time','DESC')
-				->paginate(10);
-		
-			//return $data;
-			
-			if(count($data)>0)
-			{
-				$response['status']=true;
-				$response['data']=$data;
-			}
-			else{
-				
-				$response['status']=false;
-				$response['msg']="No Data Found.";
-			}
-	
-			echo json_encode($response,JSON_UNESCAPED_SLASHES); 
+		 	}
 		}
-		
+		else
+		{
+			return response()->json(['status'=>false,'error'=>'Your Amount should be greater than '.$bank_transfer_limit]);
+		}
+	}
 	   
 	  // else{
 		//   return response()->json(['status'=>false,'error'=>'Maximum amount for per day earning exceed!']);
 	   //}
-	}
+}
 
