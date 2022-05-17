@@ -27,7 +27,7 @@ use App\Models\user_payment_method;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
-use paytm\paytmchecksum\paytmchecksum;
+use paytm\paytmchecksum\PaytmChecksum;
 use Storage;
 use Illuminate\Support\Str;
 
