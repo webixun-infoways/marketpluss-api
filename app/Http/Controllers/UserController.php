@@ -25,6 +25,8 @@ use App\Models\refer_earn_setup;
 use App\Models\user_refer_log;
 use App\Models\point_level;
 use App\Models\user_fev_vendors;
+use App\Models\user_payment_method;
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
@@ -187,7 +189,27 @@ public function fetch_top_category()
 		return json_encode($response);
 	}
 	
-	
+	public function fetch_payment_methods ()
+	{
+		$user_id=Auth::user()->id;
+
+		$data=user_payment_method::where('user_id',$user_id)->get();
+
+		if(count($data)>0)
+		{
+			$response['status']=true;
+			$response['data']=$data;
+		}
+		else
+		{
+			$response['status']=true;
+			$response['msg']="No Methods Found.";
+		}
+
+		return json_encode($response,JSON_UNESCAPED_SLASHES);
+	}
+
+
 	//user_get_vendor_reviews
 	
 	public function user_get_vendor_reviews(Request $request)

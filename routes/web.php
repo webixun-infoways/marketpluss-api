@@ -27,6 +27,9 @@ Route::get('/send_mail', [UserController::class,'send_mail']);
 Route::get('/{refer_id}',[ReferandEarn::class,'genrateRequest']);
 
 Route::get('/VerifyOrderTransaction',[UserOrderController::class,'VerifyOrderTransaction']);
+Route::post('/ResponseTransaction',function (){
+    return View('ResponseTransaction');
+});
 
 
 // Route::get('login', [AuthController::class,'unauthorized']);

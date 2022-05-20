@@ -50,7 +50,8 @@ Route::middleware('auth:api')->group(function () {
 	
 	//user related route
 	 Route::post('fetch_user_profile_different', [UserController::class,'fetch_user_profile_different']);
-	
+     Route::post('fetch_payment_methods', [UserController::class,'fetch_payment_methods']);
+     
    //vendors related Routes
     Route::post('follow_vendor_user',[UserController::class,'follow_vendor_user']);
     Route::post('get_category_vendors', [UserController::class,'get_category_vendors']);
@@ -97,7 +98,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('calculate_order_discount',[UserOrderController::class,'calculate_order_discount']);
     Route::post('payonlineorder',[UserOrderController::class,'payonlineorder']);
     Route::post('initiateOrderTransaction',[UserOrderController::class,'initiateOrderTransaction']);
-
+    Route::post('initiateOrderTransaction2',[UserOrderController::class,'initiateOrderTransaction2']);
+    Route::post('VerifyOrderTransaction',[UserOrderController::class,'VerifyOrderTransaction']);
     Route::get('fetch-top-category',[UserController::class,'fetch_top_category']);
    
    
