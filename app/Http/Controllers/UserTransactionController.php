@@ -52,26 +52,9 @@ class UserTransactionController extends Controller
 	   
 	}
 	
-
-	public function verifyTransaction(Request $request)
+	public function VerifyVPA($upi_id)
 	{
-		$validator = Validator::make($request->all(), [ 
-             'upi_id'=> 'required',
-			 'transfer_amount'=> 'required'
-         ]);
-		 
-		 
-		 if ($validator->fails())
-         {
-             return response(['error'=>$validator->errors()->all()], 422);
-         }
-		 
-		 $user_id=Auth::user()->id;
-		 $txn_id=$user_id.time().uniqid(mt_rand(),true);
-		 
-		 if(Auth::user()->wallet>=$request->transfer_amount)
-		 {
-			 $mid=env("PAYTM_MID");
+		$mid=env("PAYTM_MID");
 			 $key=env("PAYTM_MERCHANT_KEY");
 			 $paytmParams = array();
 			
@@ -95,16 +78,9 @@ class UserTransactionController extends Controller
 
 				$post_data = json_encode($paytmParams, JSON_UNESCAPED_SLASHES);
 
-				if(env("APP_DEBUG")) // condition to check this is beta or release
-				{
-					$url = "https://securegw-stage.paytm.in/theia/api/v1/token/create?mid=$mid&referenceId=ref_987654321";
+				$url = env('PAYTM_ACTION')."token/create?mid=$mid&referenceId=ref_987654321";
 
-				}
-				else
-				{
-					$url = "https://securegw.paytm.in/theia/api/v1/token/create?mid=$mid&orderId=ORDERID_98765";
-
-				}
+				
 				/* for Staging */
 				
 				/* for Production */
@@ -125,7 +101,7 @@ class UserTransactionController extends Controller
 				$paytmParams = array();
 
 				$paytmParams["body"] = array(
-					"vpa"      => $request->upi_id,
+					"vpa"      => $upi_id,
 					"mid"    => $mid,
 				);
 
@@ -136,15 +112,8 @@ class UserTransactionController extends Controller
 
 				$post_data = json_encode($paytmParams, JSON_UNESCAPED_SLASHES);
 
-				if(env("APP_DEBUG")) // condition to check this is beta or release
-				{
-					$url = "https://securegw-stage.paytm.in/theia/api/v1/vpa/validate?mid=$mid&referenceId=ref_987654321";
-				}
-				else
-				{
-					$url = "https://securegw.paytm.in/theia/api/v1/vpa/validate?mid=$mid&referenceId=ref_987654321";
-			
-				}
+				$url = env('PAYTM_ACTION')."vpa/validate?mid=$mid&referenceId=ref_987654321";
+				
 
 				/* for Staging */
 				//
@@ -159,8 +128,30 @@ class UserTransactionController extends Controller
 				$response = curl_exec($ch);
 
 				$response=json_decode($response);
+				
+				return $response->body->valid;
+	}
 
-				if($response->body->valid)
+	public function verifyTransaction(Request $request)
+	{
+		$validator = Validator::make($request->all(), [ 
+             'upi_id'=> 'required',
+			 'transfer_amount'=> 'required'
+         ]);
+		 
+		 
+		 if ($validator->fails())
+         {
+             return response(['error'=>$validator->errors()->all()], 422);
+         }
+		 
+		 $user_id=Auth::user()->id;
+		 $txn_id=$user_id.time().uniqid(mt_rand(),true);
+		 
+		 if(Auth::user()->wallet>=$request->transfer_amount)
+		 {
+			 $validUPI=$this->VerifyVPA($request->upi_id);
+				if($validUPI)
 				{
 					$point=point_level::all();
 

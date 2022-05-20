@@ -16,6 +16,7 @@ use App\Models\vendor_rating;
 use App\Models\Vendor_cover;
 use App\Models\Vendor_Product;
 use App\Models\UserOrders;
+use App\Models\user_txn_log;
 use App\Models\Category;
 use App\Models\Notification;
 use App\Jobs\ProcessPush;
@@ -27,7 +28,7 @@ use App\Models\user_payment_method;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
-use paytm\paytmchecksum\paytmchecksum;
+use paytm\paytmchecksum\PaytmChecksum;
 use Storage;
 use Illuminate\Support\Str;
 
@@ -212,6 +213,22 @@ class UserOrderController extends Controller
         
         $order_code="MP-".Auth::user()->id.floor(time()-999999999);
 
+        $wallet=Auth::user()->wallet;
+        
+        if($request->wallet_check == true)
+        {
+            if($wallet>=$final_amount)
+                {
+                    $user_wallet=$final_amount;
+                }
+                else
+                {
+                    $user_wallet=$wallet;
+                }
+        }else
+        {
+            $user_wallet=0;
+        }  
         $order=new UserOrders();
         $order->order_code= $order_code;
         $order->order_amount =$order_amount;
@@ -219,6 +236,7 @@ class UserOrderController extends Controller
         $order->order_discount=$discount;
         $order->order_status='failed';
         $order->order_for="payonline";
+        $order->user_wallet=$user_wallet;
         $order->vendor_id=$request->vendor_id;
         $order->user_id=Auth::user()->id;
 
@@ -227,11 +245,11 @@ class UserOrderController extends Controller
             $order_id=$order->id;
             if($request->wallet_check)
             {
-                $wallet=Auth::user()->wallet;
+              
 
                 if($wallet>=$final_amount)
                 {
-                    $txn_id=$user_id.time().uniqid(mt_rand(),true);
+                    $txn_id=Auth::user()->id.time().uniqid(mt_rand(),true);
 
                     $txn=new user_orders_txn_log;
                     $txn->order_id=$order_id;
@@ -246,33 +264,50 @@ class UserOrderController extends Controller
                         $order=UserOrders::find($order_id);
 
                         $order->order_status='completed';
+                        $order->user_wallet=0;
                         if($order->save())
                         {
                         //update txn in user wallet log
                                 $res = new user_txn_log;
-                                $res->user_id = $user_id;
+                                $res->user_id = Auth::user()->id;
                                 $res->txn_id = $txn_id;
                                 $res->txn_amount = $final_amount;
                                 $res->txn_status = 'success';
                                 $res->txn_type = 'debit';
-                                $msg = "payment done to order";
+                                $msg = "payment done for order ".$order_code;
                                 $res->comment=$msg;
 
                                 //$res->save();
                                 if($res->save()){
                                 //update user wallet
-                                $user=User::find($user_id);
+                                $user=User::find(Auth::user()->id);
                                 $user->wallet=$user->wallet-$final_amount;
                                 $user->save();
-
+                                
                                 $response['status']=true;
-                                $response['discount']=$discount;
-                                $response['final_amount']=$final_amount;
-                                $response['code']=$order_code;
-                                $response['payment']="done";
-                                $response['msg']="Request Created!";
-                                return json_encode($response);
 
+                                $orderData= UserOrders::with('vendor')->where('order_code',$order_code)->get();
+
+                                if(count($orderData)>0)
+                                {
+                                    $response['status']=true;
+                                    $response['data']=$orderData;
+                                    $response['payment']="done";
+                                    return json_encode($response);
+                                }
+                                else
+                                {
+                                    $response['discount']=$discount;
+                                    $response['final_amount']=$final_amount;
+                                    $response['code']=$order_code;
+                                    $response['order_amount']=$order_amount;
+                                    $response['payment']="done";
+                                    $response['date']=$order->updated_at;
+                                
+                                    $response['msg']="Request Created!";
+                                    return json_encode($response);
+                                }
+                                
                                 }
                                 else{
                                     return response()->json(['status'=>false,'error'=>'Something Went Wrong!']);
@@ -285,6 +320,7 @@ class UserOrderController extends Controller
             $response['status']=true;
             $response['discount']=$discount;
             $response['final_amount']=$final_amount;
+            $response['txn_amount']=$final_amount-$wallet;
             $response['code']=$order_code;
             $response['payment']="notdone";
             $response['msg']="Request Created!";
@@ -315,9 +351,20 @@ class UserOrderController extends Controller
         $key=env("PAYTM_MERCHANT_KEY");
         $website=env("PAYTM_WEBSITE");
         $paytmParams = array(); 
+        
+        $checkUPI= new UserTransactionController();
+        if(!$checkUPI->VerifyVPA($request->upi_id))
+        {
+            $res['status']=false;
+            $res['msg']="invalid UPI, try again";
 
+            return json_encode($res,JSON_UNESCAPED_SLASHES); 
+
+        }
         $order=UserOrders::where('order_code',$request->order_id)->get();
+
         $order_id=$request->order_id;
+
         if(count($order)>0)
         {
             $customer=Auth::user()->share_code;
@@ -326,9 +373,9 @@ class UserOrderController extends Controller
         "mid"           => $mid,
         "websiteName"   => $website,
         "orderId"       => $order_id,
-        "callbackUrl"   => "https://api.marketpluss.com/VerifyOrderTransaction",
+        "callbackUrl"   => env('APP_URL')."ResponseTransaction",
         "txnAmount"     => array(
-        "value"     => $order[0]->total_amount,
+        "value"     => $order[0]->total_amount-$order[0]->user_wallet,
         "currency"  => "INR",
         ),
         "userInfo"      => array(
@@ -349,17 +396,127 @@ class UserOrderController extends Controller
 
         $post_data = json_encode($paytmParams, JSON_UNESCAPED_SLASHES);
 
-        if(env("APP_DEBUG")) // condition to check this is beta or release
-				{
-					/* for Staging */
-                    $url = "https://securegw-stage.paytm.in/theia/api/v1/initiateTransaction?mid=$mid&orderId=$order_id";
+        $url = env('PAYTM_ACTION')."initiateTransaction?mid=$mid&orderId=$order_id";
+        
+        /* for Production */
+        
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json")); 
+        $response = curl_exec($ch);
+       $response=json_decode($response);
 
-				}
-				else
-				{
-					$url = "https://securegw.paytm.in/theia/api/v1/initiateTransaction?mid=$mid&orderId=$order_id";
+        $res=array();
+        // // print_r($response);
+        if(isset($response->body->txnToken))
+        {
 
-				}
+            $txn_id=Auth::user()->id.time().uniqid(mt_rand(),true);
+            
+            $txn=new user_orders_txn_log;
+            $txn->order_id=$order[0]->id;
+            $txn->txn_amount=$order[0]->total_amount;
+            $txn->txn_method='UPI';
+            $txn->txn_status='failed';
+            $txn->payment_txn_id=$txn_id;
+            
+            
+            if($txn->save())
+            {
+              
+
+               $upi_check=user_payment_method::where('payment_method',$request->upi_id)->where('user_id',Auth::user()->id)->delete();
+               
+                    $method_id= Str::uuid();
+                    $method=new user_payment_method;
+                    $method->method_id=$method_id;
+                    $method->user_id=Auth::user()->id;
+                    $method->payment_method=$request->upi_id;
+                    $method->method_type="UPI";
+                    $method->save();
+           
+
+                $res['status']=true;
+                $res['msg']="Created,Payment Process";
+                $res['order_id']=$order_id;
+                $res['action']=env('APP_URL')."ProcessTransactionUPI?txn_token=".$response->body->txnToken."&&mm_token=".$method_id."&&orderToken=".$order_id;
+            }
+           else
+           {
+            $res['status']=false;
+            $res['msg']="invalid request, try again2";
+           }
+        }
+        else
+        {
+            $res['status']=false;
+            $res['msg']=$url;
+        }
+        }
+        else
+        {
+            $res['status']=false;
+            $res['msg']="invalid Order id.";
+        }
+
+        return json_encode($res,JSON_UNESCAPED_SLASHES); 
+    }
+
+
+    public function initiateOrderTransaction2(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'order_id'=>'required',
+            'mm_token'=>'required'
+        ]);
+
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+
+        $mid=env("PAYTM_MID");
+        $key=env("PAYTM_MERCHANT_KEY");
+        $website=env("PAYTM_WEBSITE");
+        $paytmParams = array(); 
+
+        $order=UserOrders::where('order_code',$request->order_id)->get();
+        $order_id=$request->order_id;
+        if(count($order)>0)
+        {
+            $customer=Auth::user()->share_code;
+        $paytmParams["body"] = array(
+        "requestType"   => "Payment",
+        "mid"           => $mid,
+        "websiteName"   => $website,
+        "orderId"       => $order_id,
+        "callbackUrl"   => env('APP_URL')."ResponseTransaction",
+        "txnAmount"     => array(
+        "value"     => $order[0]->total_amount-$order[0]->user_wallet,
+        "currency"  => "INR",
+        ),
+        "userInfo"      => array(
+        "custId"    => $customer,
+        )
+        );
+
+        /*
+        * Generate checksum by parameters we have in body
+        * Find your Merchant Key in your Paytm Dashboard at https://dashboard.paytm.com/next/apikeys 
+        */
+        $checksum = PaytmChecksum::generateSignature(json_encode($paytmParams["body"], JSON_UNESCAPED_SLASHES), $key);
+
+        $paytmParams["head"] = array(
+            "signature"    => $checksum,
+            "authenticated"=>true
+        );
+
+        $post_data = json_encode($paytmParams, JSON_UNESCAPED_SLASHES);
+
+        $url = env('PAYTM_ACTION')."initiateTransaction?mid=$mid&orderId=$order_id";
+
 
         
         /* for Production */
@@ -389,18 +546,12 @@ class UserOrderController extends Controller
             
             if($txn->save())
             {
-               $method_id= Str::uuid();
-               $method=new user_payment_method;
-               $method->method_id=$method_id;
-               $method->user_id=Auth::user()->id;
-               $method->payment_method=$request->upi_id;
-               $method->method_type="UPI";
-
-                $method->save();
-
-                $res['status']=true;
+               $method_id= $request->mm_token;
+                
+               $res['status']=true;
                 $res['msg']="Sss";
-                $res['action']="http://192.168.1.14:8000/ProcessTransactionUPI?txn_token=".$response->body->txnToken."&&mm_token=".$method_id."&&orderToken=".$order_id;
+                $res['order_id']=$order_id;
+                $res['action']=env('APP_URL')."ProcessTransactionUPI?txn_token=".$response->body->txnToken."&&mm_token=".$method_id."&&orderToken=".$order_id;
             }
            else
            {
@@ -423,9 +574,139 @@ class UserOrderController extends Controller
         return json_encode($res,JSON_UNESCAPED_SLASHES); 
     }
 
+    public function VerifyOrderTransaction(Request $request)
+    {
+        $validator = Validator::make($request->all(), [ 
+            'order_id'=>'required',
+        ]);
+
+        if ($validator->fails())
+        {
+            return response(['errors'=>$validator->errors()->all()], 422);
+        }
+        
+        /* initialize an array */
+            $paytmParams = array();
+
+            /* body parameters */
+            $paytmParams["body"] = array(
+
+                /* Find your MID in your Paytm Dashboard at https://dashboard.paytm.com/next/apikeys */
+                "mid" => env("PAYTM_MID"),
+
+                /* Enter your order id which needs to be check status for */
+                "orderId" => $request->order_id,
+            );
+
+            /**
+            * Generate checksum by parameters we have in body
+            * Find your Merchant Key in your Paytm Dashboard at https://dashboard.paytm.com/next/apikeys 
+            */
+            $checksum = PaytmChecksum::generateSignature(json_encode($paytmParams["body"], JSON_UNESCAPED_SLASHES), env("PAYTM_MID"));
+
+            /* head parameters */
+            $paytmParams["head"] = array(
+
+                /* put generated checksum value here */
+                "signature"	=> $checksum
+            );
+
+            /* prepare JSON string for request */
+            $post_data = json_encode($paytmParams, JSON_UNESCAPED_SLASHES);
+
+            /* for Staging */
+            $url = "https://securegw.paytm.in/v3/order/status";
+
+            /* for Production */
+            // $url = "https://securegw.paytm.in/v3/order/status";
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));  
+            $response = curl_exec($ch);
+            $response=json_decode($response);
+
+            return json_encode($response->body->resultInfo->resultStatus);
+
+            if($response->body->resultInfo->resultStatus == "TXN_FAILURE")
+            {
+                $response['status']=false;
+                $response['msg']="transaction failed, please try again";
+            }
+            else
+            {
+                $order_id=$request->order_id;
+
+                $order=UserOrders::with('vendor')->where('order_code',$order_id)->get();
+
+                if(count($order)>0)
+                {
+                    $txn_amount=$response->body->txnAmount;
+                    $paymentMode=$response->body->paymentMode;
+                    $txn_id=$response->body->$txn_id;
+
+                    $txn=new user_orders_txn_log;
+                    $txn->order_id=$order_id;
+                    $txn->txn_amount=$txn_amount;
+                    $txn->txn_method=$paymentMode;
+                    $txn->txn_status='success';
+                    $txn->payment_txn_id=$txn_id;
+                    
+                    if($txn->save())
+                    {
+                         $order=UserOrders::find($order_id);
+
+                        $order->order_status='completed';
+                        $order->user_wallet=0;
+                        if($order->save())
+                        {
+                        //update txn in user wallet log
+                                $res = new user_txn_log;
+                                $res->user_id = Auth::user()->id;
+                                $res->txn_id = $txn_id;
+                                $res->txn_amount = $txn_amount;
+                                $res->txn_status = 'success';
+                                $res->txn_type = 'debit';
+                                $msg = "payment done for order ".$order_id;
+                                $res->comment=$msg;
+
+                                //$res->save();
+                                if($res->save()){
+                                //update user wallet
+                                $user=User::find(Auth::user()->id);
+                                $user->wallet=$user->wallet-$txn_amount;
+                                $user->save();
+
+                                $response['status']=true;
+                                $response['data']=$order;
+                                $response['payment']="done";
+                                return json_encode($response);
+
+                                
+                                }
+                            }
+                        }
+                        else
+                        {
+                            $response['status']=false;
+                            $response['msg']="transaction failed, please try again";   
+                        }
+                    }
+                else
+                {
+                    $response['status']=false;
+                    $response['msg']="transaction failed, please try again";        
+                }
+            }
+
+    }   
 
     public function ProcessTransactionUPI(Request $request)
     {
+       
+
         $txn_id=$request->txn_token;
         $order_id=$request->orderToken;
         $mm_method=$request->mm_token;
